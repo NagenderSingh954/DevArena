@@ -1,0 +1,18 @@
+node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Prisma generated client
+/generated/prisma
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
