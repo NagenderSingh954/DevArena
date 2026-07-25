@@ -30,10 +30,11 @@ app.post('/users',async (req,res) =>{
             user:all
         })
 })
-app.listen(3000,(error)=>{
-    if(error){
-        console.error(error)
-        process.exit(1)
-    }
-    console.log("App is listing on the port 3000")
-})
+// app.listen(3000,(error)=>{
+//     if(error){
+//         console.error(error)
+//         process.exit(1)
+//     }
+//     console.log("App is listing on the port 3000")
+// })
+ export default app

@@ -7,8 +7,276 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  user
+  admin
+  moderator
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+enum visibility {
+  private
+  public
+}
+
 model User {
-  id    String     @id  @default(uuid(7))
-  email String  @unique
-  name  String?
+  id                 String       @id @default(uuid(7))
+  username           String       @unique
+  email              String       @unique
+  fullName           String?
+  password           String
+  avatar             String?
+  role               Role         @default(user)
+  type               String       @default("Developer")
+  bio                String?
+  git                String?
+  phone              String?      @unique
+  emailVerified      Boolean      @default(false)
+  status             String       @default("active")
+  refreshToken       String?
+  refreshTokenExpiry DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  //Relations 
+  communitiesAdmin   Communitie[] @relation("Admin")
+  communitiesMember  Communitie[] @relation("Members")
+  discussion         Discussion[] @relation("discussion")
+  like               Like[]
+  contestOwner       Contest[]    @relation("contestOwner")
+  // contestPerticipant Contest[] @relation("contestPerticipant")
+  joinedContests     Contest[]    @relation("ContestParticipants")
+
+  submittedCodes SubmittedCode[]
+
+  following Follower[] @relation("UserFollowers")
+  followers Follower[] @relation("UserFollowing")
+
+  comment        Comment[]
+  nestedComments NestedComment[]
+
+  @@index([username])
+  @@map("users")
+}
+
+model Communitie {
+  id          String   @id @default(uuid(7))
+  name        String
+  adminId     String
+  admin       User     @relation("Admin", fields: [adminId], references: [id])
+  memberId    String[]
+  member      User     @relation("Members", fields: [memberId], references: [id])
+  avatar      String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Discussion {
+  id        String          @id @default(uuid(7))
+  ownerId   String
+  contestId String?
+  problemId String?
+  owner     User            @relation("discussion", fields: [ownerId], references: [id])
+  contest   Contest         @relation("contest", fields: [contestId], references: [id])
+  problem   problem         @relation("problem", fields: [problemId], references: [id])
+  content   String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  replies   NestedComment[]
+  like      Like[]
+}
+
+model Like {
+  id           String      @id @default(uuid(7))
+  userId       String
+  commentId    String?
+  discussionId String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id])
+  comment      Comment?    @relation(fields: [commentId], references: [id])
+  discussion   Discussion? @relation(fields: [discussionId], references: [id])
+
+  @@index([userId])
+  @@index([commentId])
+  @@index([discussionId])
+}
+
+model Language {
+  id        String    @id @default(uuid(7))
+  lang      String    @unique // e.g. "python", "node", "go"
+  image     String // Docker image reference, e.g. "python:3.11-slim"
+  problems  Problem[]
+  contests  Contest[]
+  createdAt DateTime  @default(now())
+}
+
+model Contest {
+  id           String     @id @default(uuid(7))
+  ownerId      String //relation with users
+  // participantId String[]  //relation with users
+  languages    Language[]
+  title        String
+  description  String?
+  contentType  String     @default("DSA")
+  visibility   visibility @default(public)
+  startingFrom DateTime
+  endingAt     DateTime //From starting and ending time teh duration must be calculated
+  totalPoints  String?
+  password     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  owner          User            @relation("contestOwner", fields: [ownerId], references: [id])
+  // participant User[] @relation("contestperticipant",fields: [participantId],references: [id])
+  participants   User[]          @relation("ContestParticipants")
+  problems       Problem[]
+  submittedCodes SubmittedCode[]
+  comment        Comment[]
+
+  @@index([title])
+}
+
+model Problem {
+  id         String     @id @default(uuid(7))
+  contestId  String //relation
+  title      String
+  statement  String
+  difficulty Difficulty @default(easy)
+  //type are missing may be in future 
+  tags       String[]
+  constrians String
+
+  contest  Contest    @relation(fields: [contestId], references: [id])
+  // language Language[] @relation(fields: [languageId],references: [id])
+  language Language[]
+
+  testCases     TestCase[] //relation   i
+  preloadedcode BuggyCode? //it is optional field Also relation with buggy code
+
+  submittedCodes SubmittedCode[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BuggyCode {
+  id        String   @id @default(uuid(7))
+  problemId String   @unique
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to Problem model
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  // Index for faster lookups by problem
+  @@index([problemId])
+}
+
+model TestCase {
+  id        String @id @default(uuid(7))
+  problemId String
+  input     String
+  output    String
+
+  // Relation to Problem model
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Index for faster lookups by problem
+  @@index([problemId])
+}
+
+model SubmittedCode {
+  id             String   @id @default(uuid(7))
+  language       String // programming language used
+  code           String // submitted solution code
+  submissionerId String //relation with user
+  problemId      String
+  contestId      String?
+  createdAt      DateTime @default(now())
+
+  // Relations
+  submissioner Users    @relation(fields: [submissionerId], references: [id])
+  problem      Problem  @relation(fields: [problemId], references: [id])
+  contest      Contest? @relation(fields: [contestId], references: [id])
+
+  // Indexes for faster lookups
+}
+
+model Follower {
+  id          String   @id @default(uuid(7))
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations (self-relation to Users)
+  follower  Users @relation("UserFollowers", fields: [followerId], references: [id])
+  following Users @relation("UserFollowing", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId]) // prevent duplicate follow records
+  // Indexes for efficient lookups
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// There will be separate class for the perticipant as we also have to rank them 
+
+model Comment {
+  id        String   @id @default(uuid(7))
+  contestId String
+  ownerId   String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  contest Contest         @relation(fields: [contestId], references: [id])
+  owner   Users           @relation(fields: [ownerId], references: [id])
+  replies NestedComment[]
+
+  // Indexes for efficient lookups
+  @@index([contestId])
+  @@index([ownerId])
+}
+
+model NestedComment {
+  id                 String   @id @default(uuid(7))
+  content            String
+  ownerId            String
+  // contestId       String
+  parentCommentId    String?
+  parentDiscussionId String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Self relation for nested replies
+  parentReplyId String?
+
+  // Relations
+  owner            User        @relation(fields: [ownerId], references: [id])
+  // contest         Contest     @relation(fields: [contestId], references: [id])
+  parentComment    Comment?    @relation(fields: [parentCommentId], references: [id])
+  parentDiscussion Discussion? @relation(fields: [parentDiscussionId], references: [id])
+
+  // Self relation
+
+  parentReply NestedComment?  @relation("ReplyTree", fields: [parentReplyId], references: [id])
+  children    NestedComment[] @relation("ReplyTree")
+
+  // Indexes for efficient lookups
+  @@index([ownerId])
+  // @@index([contestId])
+  @@index([parentCommentId])
+  @@index([parentDiscussionId])
 }
