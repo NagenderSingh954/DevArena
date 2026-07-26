@@ -25,32 +25,32 @@ enum visibility {
 }
 
 model User {
-  id                 String       @id @default(uuid(7))
-  username           String       @unique
-  email              String       @unique
+  id                 String    @id @default(uuid(7))
+  username           String    @unique
+  email              String    @unique
   fullName           String?
   password           String
   avatar             String?
-  role               Role         @default(user)
-  type               String       @default("Developer")
+  role               Role      @default(user)
+  type               String    @default("Developer")
   bio                String?
   git                String?
-  phone              String?      @unique
-  emailVerified      Boolean      @default(false)
-  status             String       @default("active")
+  phone              String?   @unique
+  emailVerified      Boolean   @default(false)
+  status             String    @default("active")
   refreshToken       String?
   refreshTokenExpiry DateTime?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   //Relations 
-  communitiesAdmin   Communitie[] @relation("Admin")
-  communitiesMember  Communitie[] @relation("Members")
-  discussion         Discussion[] @relation("discussion")
-  like               Like[]
-  contestOwner       Contest[]    @relation("contestOwner")
+  communitiesAdmin     Communitie[]      @relation("Admin")
+  communityMemberships CommunityMember[]
+  discussion           Discussion[]      @relation("discussion")
+  like                 Like[]
+  contestOwner         Contest[]         @relation("contestOwner")
   // contestPerticipant Contest[] @relation("contestPerticipant")
-  joinedContests     Contest[]    @relation("ContestParticipants")
+  joinedContests       Contest[]         @relation("ContestParticipants")
 
   submittedCodes SubmittedCode[]
 
@@ -65,26 +65,26 @@ model User {
 }
 
 model Communitie {
-  id          String   @id @default(uuid(7))
+  id          String            @id @default(uuid(7))
   name        String
   adminId     String
-  admin       User     @relation("Admin", fields: [adminId], references: [id])
-  memberId    String[]
-  member      User     @relation("Members", fields: [memberId], references: [id])
+  admin       User              @relation("Admin", fields: [adminId], references: [id])
+  members     CommunityMember[]
+  // member      User     @relation("Members", fields: [memberId], references: [id])
   avatar      String?
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model Discussion {
   id        String          @id @default(uuid(7))
   ownerId   String
-  contestId String?
-  problemId String?
+  // contestId String?
+  // problemId String?
   owner     User            @relation("discussion", fields: [ownerId], references: [id])
-  contest   Contest         @relation("contest", fields: [contestId], references: [id])
-  problem   problem         @relation("problem", fields: [problemId], references: [id])
+  // contest   Contest?         @relation("contest", fields: [contestId], references: [id])
+  // problem   Problem?         @relation("problem", fields: [problemId], references: [id])
   content   String
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
@@ -206,7 +206,7 @@ model SubmittedCode {
   createdAt      DateTime @default(now())
 
   // Relations
-  submissioner Users    @relation(fields: [submissionerId], references: [id])
+  submissioner User     @relation(fields: [submissionerId], references: [id])
   problem      Problem  @relation(fields: [problemId], references: [id])
   contest      Contest? @relation(fields: [contestId], references: [id])
 
@@ -221,8 +221,8 @@ model Follower {
   updatedAt   DateTime @updatedAt
 
   // Relations (self-relation to Users)
-  follower  Users @relation("UserFollowers", fields: [followerId], references: [id])
-  following Users @relation("UserFollowing", fields: [followingId], references: [id])
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id])
+  following User @relation("UserFollowing", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId]) // prevent duplicate follow records
   // Indexes for efficient lookups
@@ -242,8 +242,9 @@ model Comment {
 
   // Relations
   contest Contest         @relation(fields: [contestId], references: [id])
-  owner   Users           @relation(fields: [ownerId], references: [id])
+  owner   User            @relation(fields: [ownerId], references: [id])
   replies NestedComment[]
+  likes   Like[]
 
   // Indexes for efficient lookups
   @@index([contestId])
@@ -279,4 +280,17 @@ model NestedComment {
   // @@index([contestId])
   @@index([parentCommentId])
   @@index([parentDiscussionId])
+}
+
+model CommunityMember {
+  id          String @id @default(uuid(7))
+  userId      String
+  communityId String
+
+  user      User       @relation(fields: [userId], references: [id])
+  community Communitie @relation(fields: [communityId], references: [id])
+
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, communityId])
 }
