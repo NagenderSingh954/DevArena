@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeEmail, changePassword, channgeAvatar, getCurrentUser, loginUser, logout, refreshAccessToken, registerUser, updateUserDetail } from "../controllers/user.controller.js";
+import { changeEmail, changePassword, channgeAvatar, getCurrentUser, getUserProfile, getUserSubscrition, loginUser, logout, refreshAccessToken, registerUser, updateUserDetail } from "../controllers/user.controller.js";
 import { varifyJWt } from "../middleware/auth.middleware.js";
 
 
@@ -15,6 +15,8 @@ router.route('/logout').post(logout)
 router.route('/refresh-token').post(refreshAccessToken)
 router.route('/current-user').get(varifyJWt,getCurrentUser)
 router.route('/update-account').patch(varifyJWt,updateUserDetail)
+router.route('/get/:username').get(getUserProfile)
+router.route('/get/Subscription-status').get(varifyJWt,getUserSubscrition)
 
 
 export default router

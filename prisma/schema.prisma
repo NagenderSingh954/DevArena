@@ -40,6 +40,8 @@ model User {
   status             String    @default("active")
   refreshToken       String?
   refreshTokenExpiry DateTime?
+  isSubscribed Boolean  @default(false)
+  package      String  @default("free")
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -132,6 +134,7 @@ model Contest {
   password     String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+ 
 
   owner          User            @relation("contestOwner", fields: [ownerId], references: [id])
   // participant User[] @relation("contestperticipant",fields: [participantId],references: [id])
