@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken'
 
 const varifyJWt=asyncHandler(async(req,__dirname,next)=>{
    try {
-     token=req.cookies?.accessToken || req.header('Authorization')?.replace("Bearer ","")
+     let token=req.cookies?.accessToken || req.header('Authorization')?.replace("Bearer ","")
      const verification = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
      const user= await prisma.user.findUnique({
          where:{
@@ -36,7 +36,8 @@ const varifyJWt=asyncHandler(async(req,__dirname,next)=>{
      req.user=user
      next()
    } catch (error) {
-        throw new ApiError(400,"Invalid Access Token ")
+   
+        throw new ApiError(400,"Invalid Access Token ",error)
    }
 })
 

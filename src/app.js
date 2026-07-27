@@ -1,6 +1,6 @@
 import express from 'express'
 import { prisma } from '../lib/prisma.js'
-import userRouter from './routers/user.routes.js'
+
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 
@@ -53,14 +53,11 @@ app.post('/users',async (req,res) =>{
         })
 })
 
+import userRouter from './routers/user.routes.js'
+import contestRouter from './routers/contest.routes.js'
+
 app.use('/api/v1/users',userRouter)
-// app.listen(3000,(error)=>{
-//     if(error){
-//         console.error(error)
-//         process.exit(1)
-//     }
-//     console.log("App is listing on the port 3000")
-// })
+app.use('/api/v1/contest',contestRouter)
 
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({

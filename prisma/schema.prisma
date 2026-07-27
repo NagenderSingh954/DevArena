@@ -23,6 +23,13 @@ enum visibility {
   private
   public
 }
+enum ContestStatus {
+  UPCOMING
+  ONGOING
+  ENDED
+  CANCELLED
+}
+
 
 model User {
   id                 String    @id @default(uuid(7))
@@ -115,7 +122,6 @@ model Language {
   lang      String    @unique // e.g. "python", "node", "go"
   image     String // Docker image reference, e.g. "python:3.11-slim"
   problems  Problem[]
-  contests  Contest[]
   createdAt DateTime  @default(now())
 }
 
@@ -123,15 +129,17 @@ model Contest {
   id           String     @id @default(uuid(7))
   ownerId      String //relation with users
   // participantId String[]  //relation with users
-  languages    Language[]
+   isCancelled Boolean @default(false)
+  languages  String[] 
   title        String
   description  String?
   contentType  String     @default("DSA")
   visibility   visibility @default(public)
   startingFrom DateTime
-  endingAt     DateTime //From starting and ending time teh duration must be calculated
-  totalPoints  String?
+  endingAt     DateTime //From starting and ending time teh duration must be calculatedx
+  totalPoints  Int?
   password     String?
+  isProtected Boolean
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
  

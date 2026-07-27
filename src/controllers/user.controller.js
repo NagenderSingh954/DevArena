@@ -25,6 +25,12 @@ const userActive=asyncHandler(async (userId)=>{
     return true
 })
 
+const requiredobj={
+            id:true,
+            username:true,
+            avatar:true,
+            fullName:true
+        }
 
 const encryptpss = async (pass) => {
     const encryptedPass = await bcrypt.hash(pass, 10);
@@ -171,27 +177,33 @@ const channgeAvatar = asyncHandler(async (req, res) => {
     if (!avatar) {
         throw new ApiError(404, "New Avatar Not found")
     }
-    const userDetail = await prisma.user.findUnique({
-        where: {
-            id: req.user?.id
-        }
-    })
-    if (!user) {
-        throw new ApiError(404, "User Not Found")
-    }
+    // const userDetail = await prisma.user.findUnique({
+    //     where: {
+    //         id: req.user?.id
+    //     },
+    //     omit:{
+    //         password:true,
+    //         refreshToken:true,
+    //         refreshTokenExpiry:true
+    //     }
+    // })
+    // if (!userDetail) {
+    //     throw new ApiError(404, "User Not Found")
+    // }
     const updatedUser = await prisma.user.update({
         where: {
             id: req.user?.id
         },
         data: {
             avatar: avatar
-        }
+        },
+        select:requiredobj
     })
     if (!updatedUser) {
         throw new ApiError(401, "Error While Updating the User detail")
     }
-    return res.status(204).json(
-        new ApiResponse(204, updatedUser, "Avatar Updated successfully ")
+    return res.status(200).json(
+        new ApiResponse(200, updatedUser, "Avatar Updated successfully ")
     )
 })      //here Authorization needed to be checked 
 
@@ -205,11 +217,17 @@ const changePassword = asyncHandler(async (req, res) => {
     if ([oldPassword, newPassword].some((field) => field.trim() === '')) {
         throw new ApiError(400, "All Fields are Required")
     }
-
+    if(oldPassword == newPassword){
+        throw new ApiError(400, "new password must be different ")
+    }
     const user = await prisma.user.findUnique({
         where: {
             id: req.user?.id
-        }
+        },
+        select: {
+        ...requiredobj,
+        password: true,
+    },
     })
     if (!user) {
         throw new ApiError(401, "UnAuthorised Access")
@@ -229,7 +247,8 @@ const changePassword = asyncHandler(async (req, res) => {
         },
         data: {
             password: hashNewpass
-        }
+        },
+        select:requiredobj
     })
     if (!updateduser) {
         throw new ApiError(500, "Error occure while updating the password")
