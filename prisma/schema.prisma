@@ -122,6 +122,8 @@ model Language {
   lang      String    @unique // e.g. "python", "node", "go"
   image     String // Docker image reference, e.g. "python:3.11-slim"
   problems  Problem[]
+   buggyCode BuggyCode[]
+
   createdAt DateTime  @default(now())
 }
 
@@ -139,7 +141,7 @@ model Contest {
   endingAt     DateTime //From starting and ending time teh duration must be calculatedx
   totalPoints  Int?
   password     String?
-  isProtected Boolean
+  isProtected Boolean     @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
  
@@ -169,7 +171,7 @@ model Problem {
   language Language[]
 
   testCases     TestCase[] //relation   i
-  preloadedcode BuggyCode? //it is optional field Also relation with buggy code
+  preloadedcode BuggyCode[] //it is optional field Also relation with buggy code
 
   submittedCodes SubmittedCode[]
 
@@ -178,17 +180,20 @@ model Problem {
 }
 
 model BuggyCode {
-  id        String   @id @default(uuid(7))
-  problemId String   @unique
-  code      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid(7))
+  problemId  String
+  languageId String
+  code       String
 
-  // Relation to Problem model
-  problem Problem @relation(fields: [problemId], references: [id])
+  problem    Problem  @relation(fields: [problemId], references: [id])
+  language   Language @relation(fields: [languageId], references: [id])
 
-  // Index for faster lookups by problem
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([problemId, languageId])
   @@index([problemId])
+  @@index([languageId])
 }
 
 model TestCase {

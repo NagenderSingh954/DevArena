@@ -481,6 +481,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
         include: {
             contestOwner: {
                 select: {
+                    id:true,
                     title: true,
                     description: true,
                     contentType: true,
@@ -501,6 +502,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
             },
             joinedContests: {
                 select: {
+                    id:true,
                     title: true,
                     description: true,
                     contentType: true,
