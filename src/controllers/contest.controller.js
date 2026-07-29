@@ -79,29 +79,10 @@ endingAt: end,
 })
 
 const deleteContest = asyncHandler(async (req, res) => {
-    const { contestId } = req.params;
-
-    if (!contestId?.trim()) {
-        throw new ApiError(400, "Contest ID is required");
-    }
-
-    const contest = await prisma.contest.findUnique({
-        where: {
-            id: contestId
-        }
-    });
-
-    if (!contest) {
-        throw new ApiError(404, "Contest not found");
-    }
-
-    if (contest.ownerId !== req.user.id || req.user?.role !== "admin") {
-        throw new ApiError(403, "Unauthorized access");
-    }
-
+   const contest=req.contest
     await prisma.contest.delete({
         where: {
-            id: contestId
+            id: contest.id
         }
     });
 
@@ -157,7 +138,7 @@ const updateContest = asyncHandler(async (req, res) => {
 
     const updatedContest = await prisma.contest.update({
         where: {
-            id: contestId
+            id: contest.id
         },
         data: updatedData
     });

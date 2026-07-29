@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt'
 import { ApiError } from "../utils/ApiErro.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { generateAccessToken, generateRefreshToken } from "../services/auth/jwt.js";
+import { use } from "react";
+import jwt from 'jsonwebtoken'
 
 
 
@@ -271,6 +273,10 @@ const changeEmail = asyncHandler(async (req, res) => {
             id: req.user?.id,
         },
     });
+
+    if(newemail==user.email){
+        throw new ApiError(400,"new Email should be different")
+    }
 
     if (!user) {
         throw new ApiError(401, "Unauthorized Access");
@@ -560,6 +566,7 @@ const getUserSubscrition=asyncHandler(async (req,res)=>{
             username
         },
         select:{
+            id:true,
             isSubscribed:true,
             package:true
         }
@@ -569,7 +576,7 @@ const getUserSubscrition=asyncHandler(async (req,res)=>{
     }
     if(userActive(userInfo.id)){
         throw new ApiError(404,"User no Longer Existe")
-    }
+    }  // here we can directly check the status instead of making another call
     return res.status(200).json(
         new ApiResponse(200,userInfo,"User Subscription Status Fetched Succcessfully")
     )

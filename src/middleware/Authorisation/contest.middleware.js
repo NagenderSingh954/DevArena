@@ -1,5 +1,6 @@
-import { ApiError } from "../../utils/ApiErro";
-import { asyncHandler } from "../../utils/asyncHandler";
+import { prisma } from "../../../lib/prisma.js";
+import { ApiError } from "../../utils/ApiErro.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 
 const contestAuth = asyncHandler(async (req, resizeBy, next) => {
@@ -31,7 +32,7 @@ const contestAuth = asyncHandler(async (req, resizeBy, next) => {
         );
     }
     req.contest = contest;
-
+    console.log("hey tehte ")
     next();
 })
 
