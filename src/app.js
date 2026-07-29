@@ -55,9 +55,11 @@ app.post('/users',async (req,res) =>{
 
 import userRouter from './routers/user.routes.js'
 import contestRouter from './routers/contest.routes.js'
+import problemRouter from './routers/problem.routes.js'
 
 app.use('/api/v1/users',userRouter)
 app.use('/api/v1/contest',contestRouter)
+app.use('/api/v1/problem',problemRouter)
 
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({

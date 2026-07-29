@@ -49,19 +49,19 @@ const createProblem = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All required fields are required");
     }
 
-    const existingProblem = await prisma.problem.findFirst({
-        where: {
-            contestId: contest.id,
-            title
-        }
-    });
+    // const existingProblem = await prisma.problem.findFirst({
+    //     where: {
+    //         contestId: contest.id,
+    //         title
+    //     }
+    // });
 
-    if (existingProblem) {
-        throw new ApiError(
-            409,
-            "Problem with this title already exists in the contest"
-        );
-    }
+    // if (existingProblem) {
+    //     throw new ApiError(
+    //         409,
+    //         "Problem with this title already exists in the contest"
+    //     );
+    // }
 
     const problem = await prisma.problem.create({
         data: {

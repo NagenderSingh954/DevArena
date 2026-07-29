@@ -30,3 +30,5 @@ const problemAuth = asyncHandler(async (req, res, next) => {
 
     next();
 });
+
+export default problemAuth

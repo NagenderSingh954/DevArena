@@ -531,6 +531,63 @@ const getLeaderboard = asyncHandler(async (req, res) => {
     );
 });
 
+const getContestById = asyncHandler(async (req, res) => {
+    const { contestId } = req.params;
+
+    if (!contestId) {
+        throw new ApiError(400, "Contest ID is required");
+    }
+
+    const contest = await prisma.contest.findUnique({
+        where: {
+            id: contestId,
+            isCancelled: false
+        },
+        include: {
+            owner: {
+                select: {
+                    id: true,
+                    username: true,
+                    fullName: true,
+                    avatar: true
+                }
+            },
+            languages: {
+                select: {
+                    id: true,
+                    language: true,
+                    image: true
+                }
+            },
+            problems: {
+                select: {
+                    id: true,
+                    title: true,
+                    difficulty: true,
+                    points: true
+                }
+            },
+            _count: {
+                select: {
+                    participants: true,
+                    problems: true,
+                    submittedCodes: true,
+                    comment: true
+                }
+            }
+        }
+    });
+
+    if (!contest) {
+        throw new ApiError(404, "Contest not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, contest, "Contest fetched successfully")
+    );
+}); 
+
 export {
-    createContest,deleteContest,updateContest,getAllContest,cancelContest,changeContestPassword,joinedContests,leaveContest,updateContestDuration,viewParticipants,getLeaderboard
+    createContest,deleteContest,updateContest,getAllContest,cancelContest,changeContestPassword,joinedContests,leaveContest,updateContestDuration,viewParticipants,getLeaderboard,
+    getContestById
 }

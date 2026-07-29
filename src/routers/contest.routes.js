@@ -3,6 +3,7 @@ import { varifyJWt } from "../middleware/auth.middleware.js";
 import {cancelContest, changeContestPassword, createContest,
         deleteContest,
         getAllContest,
+        getContestById,
         getLeaderboard,
         joinedContests,
         leaveContest,
@@ -26,4 +27,5 @@ router.route('/leave/:contestId').patch(varifyJWt,leaveContest)
 router.route('/update/time/:contestId').patch(varifyJWt,contestAuth,updateContestDuration)
 router.route('/participants/:contestId').get(varifyJWt,contestAuth,viewParticipants)
 router.route('/rank/:contestId').get(getLeaderboard)
+router.route('/get/:contestId').get(getContestById)
 export default router
