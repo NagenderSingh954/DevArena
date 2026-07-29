@@ -32,7 +32,7 @@ const contestAuth = asyncHandler(async (req, resizeBy, next) => {
         );
     }
     req.contest = contest;
-    console.log("hey tehte ")
+   
     next();
 })
 

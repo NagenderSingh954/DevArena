@@ -102,19 +102,33 @@ model Discussion {
 }
 
 model Like {
-  id           String      @id @default(uuid(7))
-  userId       String
-  commentId    String?
-  discussionId String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  user         User        @relation(fields: [userId], references: [id])
-  comment      Comment?    @relation(fields: [commentId], references: [id])
-  discussion   Discussion? @relation(fields: [discussionId], references: [id])
+  id              String   @id @default(uuid(7))
+
+  userId          String
+  contestId       String?
+  commentId       String?
+  discussionId    String?
+  nestedCommentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id])
+  contest         Contest?        @relation(fields: [contestId], references: [id])
+  comment         Comment?        @relation(fields: [commentId], references: [id])
+  discussion      Discussion?     @relation(fields: [discussionId], references: [id])
+  nestedComment   NestedComment?  @relation(fields: [nestedCommentId], references: [id])
+
+  @@unique([userId, contestId])
+  @@unique([userId, commentId])
+  @@unique([userId, discussionId])
+  @@unique([userId, nestedCommentId])
 
   @@index([userId])
+  @@index([contestId])
   @@index([commentId])
   @@index([discussionId])
+  @@index([nestedCommentId])
 }
 
 model Language {
@@ -151,6 +165,7 @@ model Contest {
   problems       Problem[]
   submittedCodes SubmittedCode[]
   comment        Comment[]
+  likes       Like[]
 
   @@index([title])
 }
@@ -289,6 +304,7 @@ model NestedComment {
 
   parentReply NestedComment?  @relation("ReplyTree", fields: [parentReplyId], references: [id])
   children    NestedComment[] @relation("ReplyTree")
+   likes  Like[]
 
   // Indexes for efficient lookups
   @@index([ownerId])
