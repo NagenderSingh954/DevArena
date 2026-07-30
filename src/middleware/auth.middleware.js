@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 
 
 const varifyJWt=asyncHandler(async(req,__dirname,next)=>{
+ 
    try {
      let token=req.cookies?.accessToken || req.header('Authorization')?.replace("Bearer ","")
      const verification = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)

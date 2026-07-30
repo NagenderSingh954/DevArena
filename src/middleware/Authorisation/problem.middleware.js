@@ -1,6 +1,6 @@
-import { prisma } from "../../../lib/prisma";
-import { ApiError } from "../../utils/ApiErro";
-import { asyncHandler } from "../../utils/asyncHandler";
+import { prisma } from "../../../lib/prisma.js";
+import { ApiError } from "../../utils/ApiErro.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const problemAuth = asyncHandler(async (req, res, next) => {
     const { problemId } = req.params;

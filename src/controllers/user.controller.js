@@ -582,5 +582,47 @@ const getUserSubscrition=asyncHandler(async (req,res)=>{
     )
 })
 
+const getAllUsers = asyncHandler(async (req, res) => {
+    console.log('djhfsj')
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = 15;
+    const skip = (page - 1) * limit;
 
-export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail,getUserProfile,getUserSubscrition}
+    const [users, totalUsers] = await Promise.all([
+        prisma.user.findMany({
+            skip,
+            take: limit,
+            orderBy: {
+                createdAt: "desc",
+            },
+            select: {
+                id: true,
+                username: true,
+                fullName: true,
+                avatar: true,
+                role: true,
+                createdAt: true,
+            },
+        }),
+        prisma.user.count(),
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                users,
+                pagination: {
+                    totalUsers,
+                    currentPage: page,
+                    totalPages: Math.ceil(totalUsers / limit),
+                    hasNextPage: page < Math.ceil(totalUsers / limit),
+                    hasPreviousPage: page > 1,
+                },
+            },
+            "Users fetched successfully."
+        )
+    );
+});
+
+export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail,getUserProfile,getUserSubscrition,getAllUsers}

@@ -38,31 +38,16 @@ const createProblem = asyncHandler(async (req, res) => {
         statement,
         difficulty,
         tags,
-        constrians
+        constraints
     } = req.body;
 
-    if (
-        [title, statement, constrians].some(
-            (field) => !field?.trim()
-        )
-    ) {
-        throw new ApiError(400, "All required fields are required");
-    }
-
-    // const existingProblem = await prisma.problem.findFirst({
-    //     where: {
-    //         contestId: contest.id,
-    //         title
-    //     }
-    // });
-
-    // if (existingProblem) {
-    //     throw new ApiError(
-    //         409,
-    //         "Problem with this title already exists in the contest"
-    //     );
-    // }
-
+   if (
+    [title, statement].some(field => !field?.trim()) ||
+    !Array.isArray(constraints) ||
+    constraints.length === 0
+) {
+    throw new ApiError(400, "All fields are required");
+}
     const problem = await prisma.problem.create({
         data: {
             contestId: contest.id,
@@ -70,7 +55,7 @@ const createProblem = asyncHandler(async (req, res) => {
             statement,
             difficulty,
             tags,
-            constrians
+            constraints
         }
     });
 
@@ -302,15 +287,9 @@ const addTestCases = asyncHandler(async (req, res) => {
         };
     });
 
-    await prisma.testCase.createMany({
-        data
-    });
-
-    const createdTestCases = await prisma.testCase.findMany({
-        where: {
-            problemId: req.problem.id
-        }
-    });
+    const createdTestCases = await prisma.testCase.createManyAndReturn({
+    data,
+});
 
     return res.status(201).json(
         new ApiResponse(
@@ -339,6 +318,16 @@ const getProblemById = asyncHandler(async (req, res) => {
                     lang: true,
                     image: true
                 }
+            },
+            testCases:{
+                select:{
+                    input:true,
+                    output:true
+                }
+            },
+            preloadedcode:{
+                select:{languageId:true,
+                code:true}
             }
         }
     });

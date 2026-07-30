@@ -1,7 +1,7 @@
-import { prisma } from "../../lib/prisma";
-import { ApiError } from "../utils/ApiErro";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "../../lib/prisma.js";
+import { ApiError } from "../utils/ApiErro.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 
 //toggle like on discusstion ,comment and contest user likes

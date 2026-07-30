@@ -1,4 +1,7 @@
-import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "../../lib/prisma.js";
+import { ApiError } from "../utils/ApiErro.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 // toggleFollow
 // getFollowers
@@ -276,3 +279,5 @@ const getFollowStatus = asyncHandler(async (req, res) => {
         )
     );
 });
+
+export {toggleFollow,getFollowStatus,getFollowers,getFollowing}

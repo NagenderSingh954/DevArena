@@ -76,14 +76,25 @@ model User {
 model Communitie {
   id          String            @id @default(uuid(7))
   name        String
+  description String?
+  avatar      String?
+
   adminId     String
   admin       User              @relation("Admin", fields: [adminId], references: [id])
+
   members     CommunityMember[]
-  // member      User     @relation("Members", fields: [memberId], references: [id])
-  avatar      String?
-  description String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+
+  // Permissions
+  allowMessages        Boolean @default(true)
+  allowMedia           Boolean @default(true)
+  allowFiles           Boolean @default(true)
+  allowMemberInvite    Boolean @default(false)
+  allowMemberEdit      Boolean @default(false)
+  onlyAdminCanAnnounce Boolean @default(false)
+  onlyAdminCanPin      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Discussion {
@@ -99,6 +110,10 @@ model Discussion {
   updatedAt DateTime        @updatedAt
   replies   NestedComment[]
   like      Like[]
+  isEdited Boolean @default(false)
+
+  @@index([ownerId])
+@@index([createdAt])
 }
 
 model Like {
@@ -116,8 +131,8 @@ model Like {
   user            User            @relation(fields: [userId], references: [id])
   contest         Contest?        @relation(fields: [contestId], references: [id])
   comment         Comment?        @relation(fields: [commentId], references: [id])
-  discussion      Discussion?     @relation(fields: [discussionId], references: [id])
-  nestedComment   NestedComment?  @relation(fields: [nestedCommentId], references: [id])
+  discussion      Discussion?     @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  nestedComment   NestedComment?  @relation(fields: [nestedCommentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contestId])
   @@unique([userId, commentId])
@@ -131,10 +146,20 @@ model Like {
   @@index([nestedCommentId])
 }
 
+// model Language {
+//   id        String      @id @default(uuid(7))
+//   lang      String      @unique // e.g. "python", "node", "go"
+//   image     String // Docker image reference, e.g. "python:3.11-slim"
+//   problems  Problem[]
+//   buggyCode BuggyCode[]
+
+//   createdAt DateTime @default(now())
+// }
 model Language {
-  id        String      @id @default(uuid(7))
-  lang      String      @unique // e.g. "python", "node", "go"
-  image     String // Docker image reference, e.g. "python:3.11-slim"
+  id        String @id
+  lang      String @unique
+  image     String
+
   problems  Problem[]
   buggyCode BuggyCode[]
 
@@ -178,7 +203,7 @@ model Problem {
   difficulty Difficulty @default(easy)
   //type are missing may be in future 
   tags       String[]
-  constrians String
+  constraints String[]
 
   contest  Contest    @relation(fields: [contestId], references: [id])
   // language Language[] @relation(fields: [languageId],references: [id])
@@ -295,7 +320,7 @@ model NestedComment {
   parentReplyId String?
 
   // Relations
-  owner            User        @relation(fields: [ownerId], references: [id])
+  owner            User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   // contest         Contest     @relation(fields: [contestId], references: [id])
   parentComment    Comment?    @relation(fields: [parentCommentId], references: [id])
   parentDiscussion Discussion? @relation(fields: [parentDiscussionId], references: [id])

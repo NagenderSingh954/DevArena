@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const contestAuth = asyncHandler(async (req, resizeBy, next) => {
     const { contestId } = req.params
+    console.log(contestId)
 
     if (!contestId?.trim()) {
         throw new ApiError(400, "Contest ID is required");

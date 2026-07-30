@@ -1,7 +1,7 @@
-import { prisma } from "../../lib/prisma";
-import { ApiError } from "../utils/ApiErro";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "../../lib/prisma.js";
+import { ApiError } from "../utils/ApiErro.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 
 // asyncHandler(async(req,res)=>{})
@@ -74,7 +74,7 @@ const updateComment = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(
             200,
-            updatedComment,
+            newComment,
             "Comment updated successfully"
         )
     );
@@ -158,7 +158,7 @@ const getCommentById = asyncHandler(async (req, res) => {
             id: commentId,
         },
         include: {
-            user: {
+             owner: {
                 select: {
                     id: true,
                     username: true,
@@ -257,3 +257,6 @@ const getCommentReplies = asyncHandler(async (req, res) => {
     );
 });
 
+export {
+    createComment,updateComment,deleteComment,getContestComment,getCommentById,getCommentReplies
+}
