@@ -6,6 +6,10 @@ const ownerAuth = (model, paramName) => {
     return asyncHandler(async (req, _, next) => {
         const id = req.params[paramName];
 
+        if(!id){
+             throw new ApiError(404,`${model} Id Not found`)
+        }
+
         const record = await prisma[model].findUnique({
             where: { id }
         });
@@ -15,7 +19,7 @@ const ownerAuth = (model, paramName) => {
         }
 
         if (record.ownerId !== req.user.id) {
-            throw new ApiError(403, "Unauthorized");
+            throw new ApiError(403, "Unauthorized Accecss to resources");
         }
 
         req[model] = record;

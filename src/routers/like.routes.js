@@ -8,6 +8,6 @@ const router=Router()
 router.route('/c/:commentId').post(varifyJWt,toggleCommentLike)
 router.route('/d/:discussionId').post(varifyJWt,toggleDiscussionLike)
 router.route('/contest/:contestId').post(varifyJWt,toggleContestLike)
-router.route('/nested/:commentId').post(varifyJWt,toggleNestedCommentLike)
+router.route('/nested/:nestedCommentId').post(varifyJWt,toggleNestedCommentLike)
 
 export default router

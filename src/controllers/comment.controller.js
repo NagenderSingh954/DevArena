@@ -203,7 +203,7 @@ const getCommentReplies = asyncHandler(async (req, res) => {
         prisma.nestedComment.findMany({
             where: {
                 parentCommentId: commentId,
-                parentReplyId: null, // Only first-level replies
+                // parentReplyId: null, // Only first-level replies
             },
             skip,
             take: limit,
@@ -238,6 +238,7 @@ const getCommentReplies = asyncHandler(async (req, res) => {
             },
         }),
     ]);
+    // console.log(replies)
 
     return res.status(200).json(
         new ApiResponse(

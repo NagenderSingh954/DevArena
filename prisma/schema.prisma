@@ -88,10 +88,10 @@ model Communitie {
   allowMessages        Boolean @default(true)
   allowMedia           Boolean @default(true)
   allowFiles           Boolean @default(true)
-  allowMemberInvite    Boolean @default(false)
+  allowMemberInvite    Boolean @default(true)
   allowMemberEdit      Boolean @default(false)
   onlyAdminCanAnnounce Boolean @default(false)
-  onlyAdminCanPin      Boolean @default(true)
+  onlyAdminCanPin      Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -345,7 +345,6 @@ model CommunityMember {
 
   user      User       @relation(fields: [userId], references: [id])
   community Communitie @relation(fields: [communityId], references: [id])
-
   joinedAt DateTime @default(now())
 
   @@unique([userId, communityId])

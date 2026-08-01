@@ -1,12 +1,10 @@
+import { prisma } from "../../lib/prisma.js";
+import { ApiError } from "../utils/ApiErro.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 
-// createReply
-// updateReply
-// deleteReply
 
-// getReplyById
-// getCommentReplies
-// getNestedReplies
 
 // toggleReplyLike
 // getReplyLikes
@@ -48,9 +46,9 @@ const createReply = asyncHandler(async (req, res) => {
             where: {
                 id: discussionId,
             },
-            select: {
-                id: true,
-            },
+            // select: {
+            //     id: true,
+            // },
         });
 
         if (!discussion) {
@@ -66,11 +64,11 @@ const createReply = asyncHandler(async (req, res) => {
             where: {
                 id: replyId,
             },
-            select: {
-                id: true,
-                parentCommentId: true,
-                parentDiscussionId: true,
-            },
+            // select: {
+            //     id: true,
+            //     parentCommentId: true,
+            //     parentDiscussionId: true,
+            // },
         });
 
         if (!parentReply) {

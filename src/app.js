@@ -61,6 +61,7 @@ import followerRouter from './routers/follower.routes.js'
 import commentRoute from './routers/comments.routes.js'
 import likeRoute from './routers/like.routes.js'
 import discussionRoute from './routers/disccusion.routes.js'
+import nestedRoute from './routers/nested.routes.js'
 
 app.use('/api/v1/users',userRouter)
 app.use('/api/v1/contest',contestRouter)
@@ -69,6 +70,7 @@ app.use('/api/v1/language',languageRouter)
 app.use('/api/v1/:userId/follow',followerRouter)
 app.use('/api/v1/comment',commentRoute)
 app.use('/api/v1/discussion',discussionRoute)
+app.use('/api/v1/nest',nestedRoute)
 
 app.use('/api/v1/like',likeRoute)
 
