@@ -1,7 +1,7 @@
-import { prisma } from "../../lib/prisma";
-import { ApiError } from "../utils/ApiErro";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "../../lib/prisma.js";
+import { ApiError } from "../utils/ApiErro.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
  const createCommunity = asyncHandler(async (req, res) => {
     const { name, description, avatar } = req.body;
@@ -162,7 +162,7 @@ const deleteCommunity = asyncHandler(async (req, res) => {
             "Community deleted successfully."
         )
     );
-});
+});  //pending
 
 const updateCommunityPermissions = asyncHandler(async (req, res) => {
     const { communityId } = req.params;
@@ -218,6 +218,10 @@ const updateCommunityPermissions = asyncHandler(async (req, res) => {
 
 const getCommunityById = asyncHandler(async (req, res) => {
     const { communityId } = req.params;
+
+    if(!communityId){
+        throw new ApiError(404,"Community id Not Found")
+    }
 
     const community = await prisma.communitie.findUnique({
         where: {
@@ -448,6 +452,33 @@ const leaveCommunity = asyncHandler(async (req, res) => {
         throw new ApiError(404, "You are not a member of this community.");
     }
 
+    const community = await prisma.communitie.findUnique({
+        where: {
+            id: communityId,
+        },
+        include: {
+            _count: {
+                select: {
+                    members: true,
+                },
+            },
+        },
+    });
+
+    if (!community) {
+        throw new ApiError(404, "Community not found.");
+    }
+
+    if (
+        community.adminId === userId &&
+        community._count.members > 1
+    ) {
+        throw new ApiError(
+            400,
+            "Transfer ownership or remove all members before leaving the community."
+        );
+    }
+
     await prisma.communityMember.delete({
         where: {
             userId_communityId: {
@@ -544,3 +575,48 @@ const removeMember = asyncHandler(async (req, res) => {
         )
     );
 });
+
+const getUserCommunitiesByUserId = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    const communities = await prisma.communityMember.findMany({
+        where: {
+            userId,
+        },
+        include: {
+            community: {
+                include: {
+                    admin: {
+                        select: {
+                            id: true,
+                            username: true,
+                            fullName: true,
+                            avatar: true,
+                        },
+                    },
+                    _count: {
+                        select: {
+                            members: true,
+                        },
+                    },
+                },
+            },
+        },
+        orderBy: {
+            joinedAt: "desc",
+        },
+    });
+
+    const data = communities.map(({ community }) => community);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            data,
+            "User communities fetched successfully."
+        )
+    );
+});
+
+
+export {createCommunity,updateCommunity,deleteCommunity,updateCommunityPermissions,getCommunityById,getAllCommunities,searchCommunities,getUserCommunities,joinCommunity,leaveCommunity,getCommunityMembers,removeMember,getUserCommunitiesByUserId}

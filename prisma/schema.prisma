@@ -6,7 +6,11 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
 enum Role {
   user
   admin
@@ -68,34 +72,16 @@ model User {
 
   comment        Comment[]
   nestedComments NestedComment[]
+  msgsender    Message[] @relation("MsgSender")
+  // msgreceiver     Message[] @relation("MsgReceiver") 
+  sentRequests     ChatRequest[] @relation("ChatRequestSender")
+  receivedRequests ChatRequest[] @relation("ChatRequestReceiver")
 
   @@index([username])
   @@map("users")
 }
 
-model Communitie {
-  id          String            @id @default(uuid(7))
-  name        String
-  description String?
-  avatar      String?
 
-  adminId     String
-  admin       User              @relation("Admin", fields: [adminId], references: [id])
-
-  members     CommunityMember[]
-
-  // Permissions
-  allowMessages        Boolean @default(true)
-  allowMedia           Boolean @default(true)
-  allowFiles           Boolean @default(true)
-  allowMemberInvite    Boolean @default(true)
-  allowMemberEdit      Boolean @default(false)
-  onlyAdminCanAnnounce Boolean @default(false)
-  onlyAdminCanPin      Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 model Discussion {
   id        String          @id @default(uuid(7))
@@ -338,14 +324,81 @@ model NestedComment {
   @@index([parentDiscussionId])
 }
 
+model Communitie {
+  id          String @id @default(uuid(7))
+
+  name        String?
+  description String?
+  avatar      String?
+
+  isGroup Boolean @default(false)
+
+  adminId String?
+  admin   User? @relation("Admin", fields: [adminId], references: [id])
+
+  members  CommunityMember[]
+  messages Message[]
+
+  allowMessages        Boolean @default(true)
+  allowMedia           Boolean @default(true)
+  allowFiles           Boolean @default(true)
+  allowMemberInvite    Boolean @default(true)
+  allowMemberEdit      Boolean @default(false)
+  onlyAdminCanAnnounce Boolean @default(false)
+  onlyAdminCanPin      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model CommunityMember {
   id          String @id @default(uuid(7))
+
   userId      String
   communityId String
 
   user      User       @relation(fields: [userId], references: [id])
-  community Communitie @relation(fields: [communityId], references: [id])
+  community Communitie @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
   joinedAt DateTime @default(now())
 
   @@unique([userId, communityId])
+  @@index([userId])
+  @@index([communityId])
+}
+
+model Message {
+  id          String @id @default(uuid(7))
+
+  content     String
+  senderId    String
+  communityId String
+
+  sender    User       @relation("MsgSender", fields: [senderId], references: [id])
+  community Communitie @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([communityId])
+  @@index([senderId])
+}
+
+model ChatRequest {
+  id String @id @default(uuid(7))
+
+  status RequestStatus @default(PENDING)
+
+  senderId   String
+  receiverId String
+
+  sender   User @relation("ChatRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ChatRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
 }

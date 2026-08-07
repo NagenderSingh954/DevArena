@@ -625,4 +625,32 @@ const getAllUsers = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail,getUserProfile,getUserSubscrition,getAllUsers}
+const searchUser = asyncHandler(async (req,res)=>{
+    const {username}=req.query;
+    if(!username || username.trim()==''){
+        throw new ApiError(404,"User Not found")
+    }
+
+    const user = await prisma.user.findMany({
+        where:{
+            username:{
+                contains:username,
+                mode:"insensitive"
+            }
+        },
+        orderBy: {
+            createdAt: "desc",
+        },
+        select:{
+            username:true,
+            avatar:true,
+            fullName:true
+        }
+    })
+    
+    return res.status(200).json(
+        new ApiResponse(200,user,"User fetched Successfully")
+    )
+})
+
+export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail,getUserProfile,getUserSubscrition,getAllUsers,searchUser}
