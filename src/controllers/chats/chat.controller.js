@@ -1,5 +1,5 @@
 import { emitEvent } from "../../utils/features.js";
-import { ALERT, REFETCH_CHATS } from "../../constant/event.js";
+import { ALERT, NEW_REQUEST, REFETCH_CHATS } from "../../constant/event.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiErro.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -92,6 +92,8 @@ const newGroup = asyncHandler(async (req, res) => {
 
 const getUserChats = asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    console.log(userId)
+    console.log('isjdi')
 
     const chats = await prisma.communitie.findMany({
         where: {
@@ -192,7 +194,7 @@ const getUserChats = asyncHandler(async (req, res) => {
             "Chats fetched successfully."
         )
     );
-});
+});  // this will find the other persong name and detail 
 
 const getUserGroup = asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -241,7 +243,7 @@ const getUserGroup = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, myGroups, "User Groups Fetched Successfully")
     )
-})
+})  // this will find the gropu name and detail 
 
 
 const addCommunityMembers = asyncHandler(async (req, res) => {
@@ -560,7 +562,364 @@ const leaveCommunity = asyncHandler(async (req, res) => {
     );
 });
 
+const acceptChatRequest = asyncHandler(async (req, res) => {
+    const { requestId, accept } = req.body; //accept must be Boolean 
+    const searchRequest = await prisma.chatRequest.findUnique({
+        where: {
+            id: requestId
+        }
+    })
+   
+     if (!searchRequest) {
+        throw new ApiError(404, "Chat request not found");
+    }
 
 
+    if (searchRequest.receiverId !== req.user.id) {
+        throw new ApiError(401, "You are not authorised to Accept this request")
+    }
+     console.log(searchRequest.receiverId)
+    if (!accept) {
+        await prisma.chatRequest.delete({
+            where: {
+                id: requestId
+            }
+        })
+        return res.status(200).json(
+            new ApiResponse(200, {}, "Request Has Been Rejected Successfully")
+        )
+    }
+    const chat = await prisma.communitie.create({
+        data: {
+            isGroup: false,
+            members: {
+                create: [
+                    {
+                        userId: searchRequest.receiverId
+                    },
+                    {
+                        userId: searchRequest.senderId
+                    }
+                ]
+            }
+        },
+       select: {
+        id: true,
 
-export { newGroup, addCommunityMembers, getUserChats, getUserGroup, removeMember, leaveCommunity }
+        members: {
+            select: {
+                id: true,
+                communityId: true,
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                        fullName: true
+                    }
+                }
+            }
+        }
+    }
+    });
+
+    const members = chat.members.map(member => member.userId);
+
+    await prisma.chatRequest.delete({
+            where: {
+                id: requestId
+            }
+        })
+
+    emitEvent(req,REFETCH_CHATS,members)
+
+    return res.status(200).json(
+            new ApiResponse(200, chat, "Request Has Been accepted Successfully")
+        )
+})
+
+const sendRequest=asyncHandler(async(req,res)=>{
+    const {userId}=req.body;
+
+    if(!userId){
+        throw new ApiError(404,"User Id not found");
+    }
+    const existing=await prisma.chatRequest.findFirst({
+        where:{
+            OR:[
+                {receiverId:req.user.id,senderId:userId},
+                {receiverId:userId,senderId:req.user.id}
+            ]
+        }
+    })
+    if(existing){
+         throw new ApiError(400,"request alredy sended");
+    }
+    const request=await prisma.chatRequest.create({
+        data:{
+            senderId:req.user.id,
+            receiverId:userId
+        }
+    })
+    emitEvent(req, NEW_REQUEST, [userId]);
+    
+    return res.status(200).json(
+        new ApiResponse(200,request,"Request sended successfully")
+    )
+})
+
+const getMessages=asyncHandler(async(req,res)=>{
+    const {communityId}=req.params;
+    const {page=1}= req.query;
+    const limit =20
+    const skip=(page-1)*limit;
+
+    const exist=await prisma.communitie.findUnique({
+        where:{
+            id:communityId
+        }
+    })
+
+    if(!exist){
+        throw new ApiError(404,"Community not found")
+    }
+
+    const [chat,totalChats]=await Promise.all([
+        prisma.message.findMany({
+            take:limit,
+            skip:skip,
+            where:{
+                communityId:communityId
+            },
+            orderBy:{
+                createdAt:"asc"
+            }
+
+        }),
+        prisma.message.count({
+            where:{
+               communityId 
+            }
+        })
+    ])
+
+    return res.status(200).json(
+        new ApiResponse(200,
+            {
+                chat,
+                pagination:{
+                    limit,
+                    currentPage:page,
+                    total:totalChats,
+                    totalPage:Math.ceil(totalChats/limit)||0
+                }
+            }
+        )
+    )
+
+})
+
+const getCommunityDetails = asyncHandler(async (req, res) => {
+  const { communityId } = req.params;
+
+  if (req.query.populate === "true") {
+    const community = await prisma.communitie.findUnique({
+      where: {
+        id: communityId,
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                fullName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new ApiError(404, "Community not found");
+    }
+
+    return res.status(200).json({
+      success: true,
+      community,
+    });
+  }
+
+  const community = await prisma.communitie.findUnique({
+    where: {
+      id: communityId,
+    },
+  });
+
+  if (!community) {
+    throw new ApiError(404, "Community not found");
+  }
+
+  return res.status(200).json({
+    success: true,
+    community,
+  });
+});
+
+const renameCommunity = asyncHandler(async (req, res) => {
+  const { communityId } = req.params;
+  const { name } = req.body;
+  const userId = req.user.id;
+
+  if (!communityId || !name?.trim()) {
+    throw new ApiError(400, "Community ID and name are required.");
+  }
+
+  const community = await prisma.communitie.findUnique({
+    where: {
+      id: communityId,
+    },
+    select: {
+      id: true,
+      name: true,
+      isGroup: true,
+      adminId: true,
+
+      members: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  if (!community) {
+    throw new ApiError(404, "Community not found.");
+  }
+
+  if (!community.isGroup) {
+    throw new ApiError(400, "This community is not a group.");
+  }
+
+  if (community.adminId !== userId) {
+    throw new ApiError(
+      403,
+      "Only the group admin can rename the group."
+    );
+  }
+
+  const updatedCommunity = await prisma.communitie.update({
+    where: {
+      id: communityId,
+    },
+    data: {
+      name: name.trim(),
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+      isGroup: true,
+      adminId: true,
+      updatedAt: true,
+    },
+  });
+
+  // Get only user IDs
+  const memberIds = community.members.map((member) => member.userId);
+
+  emitEvent(req, REFETCH_CHATS, memberIds);
+
+  return res.status(200).json({
+    success: true,
+    message: "Group renamed successfully.",
+    community: updatedCommunity,
+  });
+});
+
+const deleteCommunity = asyncHandler(async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user.id;
+
+  if (!communityId) {
+    throw new ApiError(400, "Community ID is required.");
+  }
+
+  // Get community + members before deleting
+  const community = await prisma.communitie.findUnique({
+    where: {
+      id: communityId,
+    },
+    select: {
+      id: true,
+      name: true,
+      isGroup: true,
+      adminId: true,
+
+      members: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  if (!community) {
+    throw new ApiError(404, "Community not found.");
+  }
+
+  // Only groups can be deleted using this function
+  if (!community.isGroup) {
+    throw new ApiError(400, "Only group chats can be deleted.");
+  }
+
+  // Only admin can delete the group
+  if (community.adminId !== userId) {
+    throw new ApiError(
+      403,
+      "Only the group admin can delete the group."
+    );
+  }
+
+  // Keep member IDs because community will be deleted
+  const members = community.members.map(
+    (member) => member.userId
+  );
+
+  await prisma.$transaction(async (tx) => {
+    // Delete messages belonging to this community
+    await tx.message.deleteMany({
+      where: {
+        communityId: communityId,
+      },
+    });
+
+    // Delete community members
+    await tx.communityMember.deleteMany({
+      where: {
+        communityId: communityId,
+      },
+    });
+
+    // Finally delete the community
+    await tx.communitie.delete({
+      where: {
+        id: communityId,
+      },
+    });
+  });
+
+  // Tell all members to refetch their chats
+  emitEvent(req, REFETCH_CHATS, members);
+
+  return res.status(200).json({
+    success: true,
+    message: "Group deleted successfully.",
+  });
+});
+
+export { newGroup, addCommunityMembers, getUserChats, getUserGroup, removeMember, leaveCommunity,acceptChatRequest,sendRequest,getMessages,getCommunityDetails,renameCommunity,deleteCommunity}

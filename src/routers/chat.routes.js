@@ -1,15 +1,48 @@
 import { Router } from "express";
 import { varifyJWt } from "../middleware/auth.middleware.js";
-import { addCommunityMembers, getUserChats, getUserGroup, leaveCommunity, newGroup, removeMember } from "../controllers/chats/chat.controller.js";
+import { acceptChatRequest, addCommunityMembers, deleteCommunity, getCommunityDetails, getMessages, getUserChats, getUserGroup, leaveCommunity, newGroup, removeMember, renameCommunity, sendRequest } from "../controllers/chats/chat.controller.js";
 
 
 const router = Router()
 
-router.route('/new').post(varifyJWt,newGroup)
-router.route('/mychats').get(varifyJWt,getUserChats)
-router.route('/mygroups').get(varifyJWt,getUserGroup)
-router.route('/add/members/:communityId').put(varifyJWt,addCommunityMembers)
-router.route('/remove/members/:communityId').delete(varifyJWt,removeMember)
-router.route('/leave/members/:communityId').delete(varifyJWt,leaveCommunity)
+// Community
+router.route("/")
+  .post(varifyJWt, newGroup);// done testing 
+
+router.route("/my")
+  .get(varifyJWt, getUserGroup); //done 
+
+
+// Chats
+router.route("/chats")
+  .get(varifyJWt, getUserChats);  //done
+
+router.route("/:communityId")
+  .get(varifyJWt, getCommunityDetails)
+  .patch(varifyJWt, renameCommunity)
+  .delete(varifyJWt, deleteCommunity);  //done
+
+
+// Community members
+router.route("/:communityId/members")
+  .put(varifyJWt, addCommunityMembers)
+  .delete(varifyJWt, removeMember);   //done 
+
+router.route("/:communityId/leave")
+  .delete(varifyJWt, leaveCommunity); //done
+
+
+// Messages
+router.route("/:communityId/messages")
+  .get(varifyJWt, getMessages);   //done
+
+
+
+
+
+// Chat requests
+router.route("/requests")
+  .post(varifyJWt, sendRequest)
+  .put(varifyJWt, acceptChatRequest);   //done but there is an error user can send the request again and again even if the other user accepted the request 
 
 export default router

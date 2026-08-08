@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeEmail, changePassword, channgeAvatar, getAllUsers, getCurrentUser, getUserProfile, getUserSubscrition, loginUser, logout, refreshAccessToken, registerUser, searchUser, updateUserDetail } from "../controllers/user.controller.js";
+import { changeEmail, changePassword, channgeAvatar, getAllUsers, getChatNotification, getCurrentUser, getUserProfile, getUserSubscrition, loginUser, logout, refreshAccessToken, registerUser, searchUser, updateUserDetail } from "../controllers/user.controller.js";
 import { varifyJWt } from "../middleware/auth.middleware.js";
 import { getAllContest } from "../controllers/contest.controller.js";
 
@@ -22,6 +22,7 @@ router.route('/get/:username').get(getUserProfile)
 router.route('/get/Subscription-status/:username').get(varifyJWt,getUserSubscrition)
 router.route("/search")
     .get(searchUser);
+router.route('/notification').get(varifyJWt,getChatNotification)
 
 
 

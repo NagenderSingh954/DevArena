@@ -11,28 +11,28 @@ import jwt from 'jsonwebtoken'
 
 //getproblem and perticipation , strick , subscription ,  in active 
 
-const userActive=asyncHandler(async (userId)=>{
-    const userInfro=await prisma.user.findUnique({
-        where:{
-            id:userId
+const userActive = asyncHandler(async (userId) => {
+    const userInfro = await prisma.user.findUnique({
+        where: {
+            id: userId
         },
-        select:{
-            status:true
+        select: {
+            status: true
         }
     })
 
-    if(userInfro.status != 'active'){
+    if (userInfro.status != 'active') {
         return false
     }
     return true
 })
 
-const requiredobj={
-            id:true,
-            username:true,
-            avatar:true,
-            fullName:true
-        }
+const requiredobj = {
+    id: true,
+    username: true,
+    avatar: true,
+    fullName: true
+}
 
 const encryptpss = async (pass) => {
     const encryptedPass = await bcrypt.hash(pass, 10);
@@ -199,7 +199,7 @@ const channgeAvatar = asyncHandler(async (req, res) => {
         data: {
             avatar: avatar
         },
-        select:requiredobj
+        select: requiredobj
     })
     if (!updatedUser) {
         throw new ApiError(401, "Error While Updating the User detail")
@@ -219,7 +219,7 @@ const changePassword = asyncHandler(async (req, res) => {
     if ([oldPassword, newPassword].some((field) => field.trim() === '')) {
         throw new ApiError(400, "All Fields are Required")
     }
-    if(oldPassword == newPassword){
+    if (oldPassword == newPassword) {
         throw new ApiError(400, "new password must be different ")
     }
     const user = await prisma.user.findUnique({
@@ -227,9 +227,9 @@ const changePassword = asyncHandler(async (req, res) => {
             id: req.user?.id
         },
         select: {
-        ...requiredobj,
-        password: true,
-    },
+            ...requiredobj,
+            password: true,
+        },
     })
     if (!user) {
         throw new ApiError(401, "UnAuthorised Access")
@@ -250,7 +250,7 @@ const changePassword = asyncHandler(async (req, res) => {
         data: {
             password: hashNewpass
         },
-        select:requiredobj
+        select: requiredobj
     })
     if (!updateduser) {
         throw new ApiError(500, "Error occure while updating the password")
@@ -274,8 +274,8 @@ const changeEmail = asyncHandler(async (req, res) => {
         },
     });
 
-    if(newemail==user.email){
-        throw new ApiError(400,"new Email should be different")
+    if (newemail == user.email) {
+        throw new ApiError(400, "new Email should be different")
     }
 
     if (!user) {
@@ -470,11 +470,11 @@ const getUserProfile = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Username is missing or not existed")
     }
     const userSelect = {
-    id: true,
-    username: true,
-    avatar: true,
-    role: true
-};
+        id: true,
+        username: true,
+        avatar: true,
+        role: true
+    };
     const user = await prisma.user.findUnique({
         where: {
             username
@@ -487,7 +487,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
         include: {
             contestOwner: {
                 select: {
-                    id:true,
+                    id: true,
                     title: true,
                     description: true,
                     contentType: true,
@@ -495,7 +495,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
                     createdAt: true,
                     endingAt: true,
                     owner: {
-                        select:userSelect
+                        select: userSelect
                     },
                     _count: {
                         select: {
@@ -508,7 +508,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
             },
             joinedContests: {
                 select: {
-                    id:true,
+                    id: true,
                     title: true,
                     description: true,
                     contentType: true,
@@ -518,14 +518,14 @@ const getUserProfile = asyncHandler(async (req, res) => {
                         select: userSelect
                     },
                     _count: {
-                    select:{
-                    participants: true,
-                    problems: true,
-                    comment: true
-                }
-                }
+                        select: {
+                            participants: true,
+                            problems: true,
+                            comment: true
+                        }
+                    }
                 },
-                
+
             },
             _count: {
                 select: {
@@ -545,40 +545,40 @@ const getUserProfile = asyncHandler(async (req, res) => {
     if (!user) {
         throw new ApiError(404, "User Not Found")
     }
-     if(userActive(user.id)){
-        throw new ApiError(404,"User no Longer Existe")
+    if (userActive(user.id)) {
+        throw new ApiError(404, "User no Longer Existe")
     }
 
     return res.status(200).json(
-        new ApiResponse(200,user,"User data Fetched Successfully")
+        new ApiResponse(200, user, "User data Fetched Successfully")
     )
 })
 
-const getUserSubscrition=asyncHandler(async (req,res)=>{
-    const {username}=req.params
+const getUserSubscrition = asyncHandler(async (req, res) => {
+    const { username } = req.params
 
-    if(!username){
-        throw new ApiError(400,"Please Provide the Username")
+    if (!username) {
+        throw new ApiError(400, "Please Provide the Username")
     }
 
-    const userInfo=await prisma.user.findUnique({
-        where:{
+    const userInfo = await prisma.user.findUnique({
+        where: {
             username
         },
-        select:{
-            id:true,
-            isSubscribed:true,
-            package:true
+        select: {
+            id: true,
+            isSubscribed: true,
+            package: true
         }
     })
-    if(!userInfo){
-        throw new ApiError(404,"User Not Found")
+    if (!userInfo) {
+        throw new ApiError(404, "User Not Found")
     }
-    if(userActive(userInfo.id)){
-        throw new ApiError(404,"User no Longer Existe")
+    if (userActive(userInfo.id)) {
+        throw new ApiError(404, "User no Longer Existe")
     }  // here we can directly check the status instead of making another call
     return res.status(200).json(
-        new ApiResponse(200,userInfo,"User Subscription Status Fetched Succcessfully")
+        new ApiResponse(200, userInfo, "User Subscription Status Fetched Succcessfully")
     )
 })
 
@@ -625,32 +625,58 @@ const getAllUsers = asyncHandler(async (req, res) => {
     );
 });
 
-const searchUser = asyncHandler(async (req,res)=>{
-    const {username}=req.query;
-    if(!username || username.trim()==''){
-        throw new ApiError(404,"User Not found")
+const searchUser = asyncHandler(async (req, res) => {
+    const { username } = req.query;
+    if (!username || username.trim() == '') {
+        throw new ApiError(404, "User Not found")
     }
 
     const user = await prisma.user.findMany({
-        where:{
-            username:{
-                contains:username,
-                mode:"insensitive"
+        where: {
+            username: {
+                contains: username,
+                mode: "insensitive"
             }
         },
         orderBy: {
             createdAt: "desc",
         },
-        select:{
-            username:true,
-            avatar:true,
-            fullName:true
+        select: {
+            username: true,
+            avatar: true,
+            fullName: true
         }
     })
-    
+
     return res.status(200).json(
-        new ApiResponse(200,user,"User fetched Successfully")
+        new ApiResponse(200, user, "User fetched Successfully")
     )
 })
+const getChatNotification = asyncHandler(async (req, res) => {
+    const request = await prisma.chatRequest.findMany({
+        where: {
+            receiverId: req.user.id
+        },
+        select: {
+            id: true,
+            status: true,
+            sender: {
+                select: {
+                    username: true,
+                    avatar: true,
+                    fullName: true
+                }
+            }
+        },
+        orderBy: {
+            createdAt: "desc",
+        }
+    })
+    return res.status(200).json(
+        new ApiResponse(200, request, "Request fetched Successfully")
+    )
 
-export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail,getUserProfile,getUserSubscrition,getAllUsers,searchUser}
+})
+
+
+export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail, getUserProfile, getUserSubscrition, getAllUsers, searchUser, getChatNotification }

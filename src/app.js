@@ -74,7 +74,7 @@ app.use('/api/v1/comment',commentRoute)
 app.use('/api/v1/discussion',discussionRoute)
 app.use('/api/v1/nest',nestedRoute)
 app.use('/api/v1/like',likeRoute)
-app.use('/api/v1/community',communityRoute)
+// app.use('/api/v1/community',communityRoute)
 app.use('/api/v1/chat',chatRoute)
 
 
