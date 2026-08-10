@@ -1,9 +1,11 @@
 import express from 'express'
 import { prisma } from '../lib/prisma.js'
-
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
-
+import { Server } from 'socket.io'
+import { createServer } from 'http'
+import {v4 as uuid} from 'uuid'
+import { getSockets } from './utils/features.js'    
 
 const app=express()
 
@@ -22,6 +24,70 @@ const app=express()
 //         credentials: true,
 //     })
 // ); 
+
+
+const server=createServer(app)
+
+const io=new Server(server,()=>{});
+
+const userSocketIDs= new Map();
+
+io.on("connection",(socket)=>{
+      console.log("User connected:", socket.id);
+      const user={
+        id:"019fa537-7303-7195-82a0-89b035bb9d76",
+        name:"Vikas Singh"
+      }
+
+      userSocketIDs.set(user.id.toString(),socket.id)
+
+        socket.on(NEW_MESSAGE,async({communityId,members,message})=>{
+            const messageForRealTime={
+                id:uuid(),
+                content:message,
+                sender:{
+                    id:user.id,
+                    name:user.name
+                },
+                chat:communityId,
+                createdAt:new Date().toISOString()
+            }
+
+            const messageForDB= {
+                content:message,
+                communityId:communityId,
+                senderId:user.id
+            }
+
+            const memebersSockets=getSockets(members)
+            console.log("NEW_MESSAGE",messageForRealTime);
+        
+            // io.emit(NEW_MESSAGE,messageForDB);
+            io.to(members).emit(NEW_MESSAGE,{
+                communityId,
+                message:messageForRealTime
+
+            })
+             io.to(members).emit(NEW_MESSAGE_ALERT,{
+                communityId,})
+            try {
+                await prisma.message.create({
+                    data:messageForDB
+                })
+            } catch (error) {
+                console.log(error)
+            }
+
+        })
+        
+     
+        console.log(userSocketIDs)
+      socket.on("disconnect",()=>{
+        userSocketIDs.delete(user.id.toString());
+        console.log("User Disconnected")
+      })
+})
+
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded())
@@ -64,6 +130,9 @@ import discussionRoute from './routers/disccusion.routes.js'
 import nestedRoute from './routers/nested.routes.js'
 import communityRoute from './routers/community.routes.js'
 import chatRoute from './routers/chat.routes.js'
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constant/event.js'
+import { send } from 'process'
+
 
 app.use('/api/v1/users',userRouter)
 app.use('/api/v1/contest',contestRouter)
@@ -85,4 +154,4 @@ app.use((err, req, res, next) => {
         errors: err.errors || []
     });
 });
- export default app
+ export {app,server,userSocketIDs}

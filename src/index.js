@@ -1,6 +1,7 @@
-import app from './app.js'
+import {app,server} from './app.js'
 import { connectDB } from './db/index.js'
 import dotenv from 'dotenv';
+
 
 
 dotenv.config({
@@ -13,7 +14,7 @@ connectDB()
         console.error("Express application error:", error);
          throw error;
     })
-    app.listen(process.env.PORT || 8000,(error)=>{
+    server.listen(process.env.PORT || 8000,(error)=>{
     if(error){
         console.error(error)
         process.exit(1)
