@@ -6,7 +6,7 @@ const emitEvent=(req,event,users,data)=>{
 
 
 const getSockets=(users=[])=>{
-    const sockets=users.map((u)=>userSocketIDs.get(u.id.toString()));
+    const sockets=users.map((u)=>userSocketIDs.get(u.toString()));
     return sockets;
 }
 

@@ -5,7 +5,9 @@ import cookieParser from 'cookie-parser'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
 import {v4 as uuid} from 'uuid'
-import { getSockets } from './utils/features.js'    
+import { getSockets } from './utils/features.js'
+import { socketAuthenticator } from './middleware/auth.middleware.js'
+import { corsOptions } from './constant/config.js'    
 
 const app=express()
 
@@ -28,16 +30,23 @@ const app=express()
 
 const server=createServer(app)
 
-const io=new Server(server,()=>{});
+const io=new Server(server,{cors:corsOptions});
 
 const userSocketIDs= new Map();
 
+io.use((socket, next) => {
+    console.log("Cookie header:", socket.request.headers.cookie);
+  cookieParser()(
+    socket.request,         // req
+    socket.request.res,    // res
+    async (err) => await socketAuthenticator(err, socket, next)     //callback function like next()
+  );
+});  //exprese cookieparser not work in the socket 
 io.on("connection",(socket)=>{
       console.log("User connected:", socket.id);
-      const user={
-        id:"019fa537-7303-7195-82a0-89b035bb9d76",
-        name:"Vikas Singh"
-      }
+   
+    const user=socket.user;
+  
 
       userSocketIDs.set(user.id.toString(),socket.id)
 
@@ -47,7 +56,7 @@ io.on("connection",(socket)=>{
                 content:message,
                 sender:{
                     id:user.id,
-                    name:user.name
+                    name:user.username
                 },
                 chat:communityId,
                 createdAt:new Date().toISOString()
@@ -132,6 +141,7 @@ import communityRoute from './routers/community.routes.js'
 import chatRoute from './routers/chat.routes.js'
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constant/event.js'
 import { send } from 'process'
+
 
 
 app.use('/api/v1/users',userRouter)
