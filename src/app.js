@@ -7,7 +7,8 @@ import { createServer } from 'http'
 import {v4 as uuid} from 'uuid'
 import { getSockets } from './utils/features.js'
 import { socketAuthenticator } from './middleware/auth.middleware.js'
-import { corsOptions } from './constant/config.js'    
+import { corsOptions } from './constant/config.js'  
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constant/event.js'
 
 const app=express()
 
@@ -31,6 +32,8 @@ const app=express()
 const server=createServer(app)
 
 const io=new Server(server,{cors:corsOptions});
+
+app.set("io",io)
 
 const userSocketIDs= new Map();
 
@@ -139,7 +142,7 @@ import discussionRoute from './routers/disccusion.routes.js'
 import nestedRoute from './routers/nested.routes.js'
 import communityRoute from './routers/community.routes.js'
 import chatRoute from './routers/chat.routes.js'
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constant/event.js'
+
 import { send } from 'process'
 
 
