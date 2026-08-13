@@ -551,7 +551,7 @@ const leaveCommunity = asyncHandler(async (req, res) => {
     );
 
     // Refresh chats
-    // emitEvent(req, REFETCH_CHATS, allChatMembers);
+    emitEvent(req, REFETCH_CHATS, allChatMembers);
 
     return res.status(200).json(
         new ApiResponse(

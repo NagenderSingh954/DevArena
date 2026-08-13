@@ -4,13 +4,13 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
-import {v4 as uuid} from 'uuid'
+import { v4 as uuid } from 'uuid'
 import { getSockets } from './utils/features.js'
 import { socketAuthenticator } from './middleware/auth.middleware.js'
-import { corsOptions } from './constant/config.js'  
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constant/event.js'
+import { corsOptions } from './constant/config.js'
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING } from './constant/event.js'
 
-const app=express()
+const app = express()
 
 
 // const allowedOrigins = process.env.CORS_ORIGIN.split(",").map(origin => origin.trim());
@@ -29,75 +29,98 @@ const app=express()
 // ); 
 
 
-const server=createServer(app)
+const server = createServer(app)
 
-const io=new Server(server,{cors:corsOptions});
+const io = new Server(server, { cors: corsOptions });
 
-app.set("io",io)
+app.set("io", io)
 
-const userSocketIDs= new Map();
+const userSocketIDs = new Map();
+const onlineUsers = new Set();
 
 io.use((socket, next) => {
     console.log("Cookie header:", socket.request.headers.cookie);
-  cookieParser()(
-    socket.request,         // req
-    socket.request.res,    // res
-    async (err) => await socketAuthenticator(err, socket, next)     //callback function like next()
-  );
+    cookieParser()(
+        socket.request,         // req
+        socket.request.res,    // res
+        async (err) => await socketAuthenticator(err, socket, next)     //callback function like next()
+    );
 });  //exprese cookieparser not work in the socket 
-io.on("connection",(socket)=>{
-      console.log("User connected:", socket.id);
-   
-    const user=socket.user;
-  
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
 
-      userSocketIDs.set(user.id.toString(),socket.id)
+    const user = socket.user;
 
-        socket.on(NEW_MESSAGE,async({communityId,members,message})=>{
-            const messageForRealTime={
-                id:uuid(),
-                content:message,
-                sender:{
-                    id:user.id,
-                    name:user.username
-                },
-                chat:communityId,
-                createdAt:new Date().toISOString()
-            }
 
-            const messageForDB= {
-                content:message,
-                communityId:communityId,
-                senderId:user.id
-            }
+    userSocketIDs.set(user.id.toString(), socket.id)
 
-            const memebersSockets=getSockets(members)
-            console.log("NEW_MESSAGE",messageForRealTime);
-        
-            // io.emit(NEW_MESSAGE,messageForDB);
-            io.to(memebersSockets).emit(NEW_MESSAGE,{
-                communityId,
-                message:messageForRealTime
+    socket.on(NEW_MESSAGE, async ({ communityId, members, message }) => {
+        const messageForRealTime = {
+            id: uuid(),
+            content: message,
+            sender: {
+                id: user.id,
+                name: user.username
+            },
+            chat: communityId,
+            createdAt: new Date().toISOString()
+        }
 
-            })
-             io.to(memebersSockets).emit(NEW_MESSAGE_ALERT,{
-                communityId,})
-            try {
-                await prisma.message.create({
-                    data:messageForDB
-                })
-            } catch (error) {
-                console.log(error)
-            }
+        const messageForDB = {
+            content: message,
+            communityId: communityId,
+            senderId: user.id
+        }
+
+        const memebersSockets = getSockets(members)
+        console.log("NEW_MESSAGE", messageForRealTime);
+
+        // io.emit(NEW_MESSAGE,messageForDB);
+        io.to(memebersSockets).emit(NEW_MESSAGE, {
+            communityId,
+            message: messageForRealTime
 
         })
-        
-     
-        console.log(userSocketIDs)
-      socket.on("disconnect",()=>{
+        io.to(memebersSockets).emit(NEW_MESSAGE_ALERT, {
+            communityId,
+        })
+        try {
+            await prisma.message.create({
+                data: messageForDB
+            })
+        } catch (error) {
+            console.log(error)
+        }
+
+    })
+
+    socket.on(START_TYPING, async ({ communityId, members }) => {
+        const memebersSockets = getSockets(members)
+        io.to(memebersSockets).emit(START_TYPING, { communityId })
+    })
+
+    socket.on(STOP_TYPING, async ({ communityId, members }) => {
+        const memebersSockets = getSockets(members)
+        io.to(memebersSockets).emit(STOP_TYPING, { communityId })
+    })
+    socket.on(CHAT_JOINED, ({ userId, members }) => {
+        onlineUsers.add(userId.toString());
+
+        const membersSocket = getSockets(members);
+        io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
+    });
+    socket.on(CHAT_LEAVED, ({ userId, members }) => {
+        onlineUsers.delete(userId.toString());
+
+        const membersSocket = getSockets(members);
+        io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
+    });
+
+    // console.log(userSocketIDs)
+    socket.on("disconnect", () => {
         userSocketIDs.delete(user.id.toString());
         console.log("User Disconnected")
-      })
+    })
 })
 
 app.use(cors())
@@ -107,28 +130,28 @@ app.use(express.static('public'))       //public is our foldee
 app.use(cookieParser())
 
 
-app.post('/users',async (req,res) =>{
+app.post('/users', async (req, res) => {
     try {
-       const resp= await prisma.user.create({
-            data:{
-                email:req.body.email,
-                name:req.body.name
+        const resp = await prisma.user.create({
+            data: {
+                email: req.body.email,
+                name: req.body.name
             }
         })
         return res.status(200).json({
-            message:"User Has been created successfully",
-            user:resp
+            message: "User Has been created successfully",
+            user: resp
         })
     } catch (error) {
-        console.log("There is error while creating the user ",error)
-        return res.status(401).json({message:error.message})
+        console.log("There is error while creating the user ", error)
+        return res.status(401).json({ message: error.message })
     }
-}).get(async (req,res)=>{
-    const all=await prisma.user.findMany()
-     return res.status(200).json({
-            message:"User fetched successfully",
-            user:all
-        })
+}).get(async (req, res) => {
+    const all = await prisma.user.findMany()
+    return res.status(200).json({
+        message: "User fetched successfully",
+        user: all
+    })
 })
 
 import userRouter from './routers/user.routes.js'
@@ -147,17 +170,17 @@ import { send } from 'process'
 
 
 
-app.use('/api/v1/users',userRouter)
-app.use('/api/v1/contest',contestRouter)
-app.use('/api/v1/:contestId/problem',problemRouter)
-app.use('/api/v1/language',languageRouter)
-app.use('/api/v1/:userId/follow',followerRouter)
-app.use('/api/v1/comment',commentRoute)
-app.use('/api/v1/discussion',discussionRoute)
-app.use('/api/v1/nest',nestedRoute)
-app.use('/api/v1/like',likeRoute)
+app.use('/api/v1/users', userRouter)
+app.use('/api/v1/contest', contestRouter)
+app.use('/api/v1/:contestId/problem', problemRouter)
+app.use('/api/v1/language', languageRouter)
+app.use('/api/v1/:userId/follow', followerRouter)
+app.use('/api/v1/comment', commentRoute)
+app.use('/api/v1/discussion', discussionRoute)
+app.use('/api/v1/nest', nestedRoute)
+app.use('/api/v1/like', likeRoute)
 // app.use('/api/v1/community',communityRoute)
-app.use('/api/v1/chat',chatRoute)
+app.use('/api/v1/chat', chatRoute)
 
 
 app.use((err, req, res, next) => {
@@ -167,4 +190,4 @@ app.use((err, req, res, next) => {
         errors: err.errors || []
     });
 });
- export {app,server,userSocketIDs}
+export { app, server, userSocketIDs }
