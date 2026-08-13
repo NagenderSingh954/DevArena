@@ -75,12 +75,12 @@ io.on("connection",(socket)=>{
             console.log("NEW_MESSAGE",messageForRealTime);
         
             // io.emit(NEW_MESSAGE,messageForDB);
-            io.to(members).emit(NEW_MESSAGE,{
+            io.to(memebersSockets).emit(NEW_MESSAGE,{
                 communityId,
                 message:messageForRealTime
 
             })
-             io.to(members).emit(NEW_MESSAGE_ALERT,{
+             io.to(memebersSockets).emit(NEW_MESSAGE_ALERT,{
                 communityId,})
             try {
                 await prisma.message.create({

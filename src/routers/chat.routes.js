@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { varifyJWt } from "../middleware/auth.middleware.js";
-import { acceptChatRequest, addCommunityMembers, deleteCommunity, getCommunityDetails, getMessages, getUserChats, getUserGroup, leaveCommunity, newGroup, removeMember, renameCommunity, sendRequest } from "../controllers/chats/chat.controller.js";
+import { acceptChatRequest, addCommunityMembers, deleteCommunity, deletePersonalChat, getCommunityDetails, getMessages, getUserChats, getUserGroup, leaveCommunity, newGroup, removeMember, renameCommunity, sendRequest } from "../controllers/chats/chat.controller.js";
 
 
 const router = Router()
@@ -22,7 +22,8 @@ router.route("/:communityId")
   .patch(varifyJWt, renameCommunity)
   .delete(varifyJWt, deleteCommunity);  //done
 
-
+router.route("/delete/:communityId")
+    .delete(varifyJWt, deletePersonalChat);
 // Community members
 router.route("/:communityId/members")
   .put(varifyJWt, addCommunityMembers)

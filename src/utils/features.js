@@ -2,6 +2,7 @@ import { app, userSocketIDs } from "../app.js";
 
 const emitEvent=(req,event,users,data)=>{
     console.log("emitting event ", event );
+    console.log("Users",users)
 
     const io=req.app.get("io");
     const memebers=getSockets(users);

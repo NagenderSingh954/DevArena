@@ -661,7 +661,7 @@ const sendRequest=asyncHandler(async(req,res)=>{
             receiverId:userId
         }
     })
-    emitEvent(req, NEW_REQUEST, [userId]);
+    emitEvent(req, NEW_REQUEST, [userId],request);
     
     return res.status(200).json(
         new ApiResponse(200,request,"Request sended successfully")
@@ -922,4 +922,88 @@ const deleteCommunity = asyncHandler(async (req, res) => {
   });
 });
 
-export { newGroup, addCommunityMembers, getUserChats, getUserGroup, removeMember, leaveCommunity,acceptChatRequest,sendRequest,getMessages,getCommunityDetails,renameCommunity,deleteCommunity}
+const deletePersonalChat = asyncHandler(async (req, res) => {
+    const { communityId } = req.params;
+    const userId = req.user.id;
+
+    if (!communityId) {
+        throw new ApiError(400, "Community ID is required.");
+    }
+
+    // Get the personal chat and its members
+    const community = await prisma.communitie.findUnique({
+        where: {
+            id: communityId,
+        },
+        select: {
+            id: true,
+            isGroup: true,
+
+            members: {
+                select: {
+                    userId: true,
+                },
+            },
+        },
+    });
+
+    if (!community) {
+        throw new ApiError(404, "Chat not found.");
+    }
+
+    // This controller is only for personal chats
+    if (community.isGroup) {
+        throw new ApiError(400, "This is a group chat.");
+    }
+
+    // Check whether the current user belongs to this chat
+    const isMember = community.members.some(
+        (member) => member.userId === userId
+    );
+
+    if (!isMember) {
+        throw new ApiError(
+            403,
+            "You are not a member of this chat."
+        );
+    }
+
+    // Keep member IDs before deleting the community
+    const members = community.members.map(
+        (member) => member.userId
+    );
+
+    await prisma.$transaction(async (tx) => {
+
+        // Delete all messages
+        await tx.message.deleteMany({
+            where: {
+                communityId: communityId,
+            },
+        });
+
+        // Delete community members
+        await tx.communityMember.deleteMany({
+            where: {
+                communityId: communityId,
+            },
+        });
+
+        // Delete the personal chat
+        await tx.communitie.delete({
+            where: {
+                id: communityId,
+            },
+        });
+    });
+
+    // Tell connected users to refetch their chats
+    emitEvent(req, REFETCH_CHATS, members);
+
+    return res.status(200).json({
+        success: true,
+        message: "Chat deleted successfully.",
+    });
+});
+
+export { newGroup, addCommunityMembers, getUserChats, getUserGroup, removeMember, leaveCommunity,acceptChatRequest,sendRequest,getMessages,getCommunityDetails,renameCommunity,deleteCommunity,deletePersonalChat}
