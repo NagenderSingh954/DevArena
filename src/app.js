@@ -8,7 +8,7 @@ import { v4 as uuid } from 'uuid'
 import { getSockets } from './utils/features.js'
 import { socketAuthenticator } from './middleware/auth.middleware.js'
 import { corsOptions } from './constant/config.js'
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING } from './constant/event.js'
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING,CHAT_JOINED,CHAT_LEAVED } from './constant/event.js'
 
 const app = express()
 
@@ -105,7 +105,7 @@ io.on("connection", (socket) => {
     })
     socket.on(CHAT_JOINED, ({ userId, members }) => {
         onlineUsers.add(userId.toString());
-
+        
         const membersSocket = getSockets(members);
         io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
     });

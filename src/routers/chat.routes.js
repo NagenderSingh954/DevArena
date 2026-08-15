@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { varifyJWt } from "../middleware/auth.middleware.js";
 import { acceptChatRequest, addCommunityMembers, deleteCommunity, deletePersonalChat, getCommunityDetails, getMessages, getUserChats, getUserGroup, leaveCommunity, newGroup, removeMember, renameCommunity, sendRequest } from "../controllers/chats/chat.controller.js";
+import { emitEvent } from "../utils/features.js";
+import { REFETCH_CHATS } from "../constant/event.js";
 
 
 const router = Router()
@@ -45,5 +47,16 @@ router.route("/:communityId/messages")
 router.route("/requests")
   .post(varifyJWt, sendRequest)
   .put(varifyJWt, acceptChatRequest);   //done but there is an error user can send the request again and again even if the other user accepted the request 
+
+router.post("/test/refetch-chats", (req, res) => {
+    const { members } = req.body;
+
+    emitEvent(req, REFETCH_CHATS, members);
+
+    return res.status(200).json({
+        success: true,
+        message: "REFETCH_CHATS emitted",
+    });
+});
 
 export default router

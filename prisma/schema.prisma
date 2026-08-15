@@ -148,6 +148,7 @@ model Language {
 
   problems  Problem[]
   buggyCode BuggyCode[]
+  submissions SubmittedCode[]
 
   createdAt DateTime @default(now())
 }
@@ -238,20 +239,55 @@ model TestCase {
 }
 
 model SubmittedCode {
-  id             String   @id @default(uuid(7))
-  language       String // programming language used
-  code           String // submitted solution code
-  submissionerId String //relation with user
+  id            String   @id @default(uuid(7))
+  code          String
+
+  submissionerId String
   problemId      String
   contestId      String?
-  createdAt      DateTime @default(now())
+
+  languageId    String
+
+  status        SubmissionStatus @default(PENDING)
+
+
+  executionTime Int?
+  memoryUsed    Int?
+
+
+  totalTestCases  Int?
+  passedTestCases Int?
+
+  // Error / execution output
+  errorMessage String?
+  output       String?
+
+  createdAt DateTime @default(now())
 
   // Relations
   submissioner User     @relation(fields: [submissionerId], references: [id])
   problem      Problem  @relation(fields: [problemId], references: [id])
   contest      Contest? @relation(fields: [contestId], references: [id])
+  language     Language @relation(fields: [languageId], references: [id])
 
-  // Indexes for faster lookups
+  // Indexes
+  @@index([submissionerId])
+  @@index([problemId])
+  @@index([contestId])
+  @@index([languageId])
+  @@index([createdAt])
+}
+
+enum SubmissionStatus {
+  PENDING
+  RUNNING
+  ACCEPTED
+  WRONG_ANSWER
+  COMPILATION_ERROR
+  RUNTIME_ERROR
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  INTERNAL_ERROR
 }
 
 model Follower {
@@ -323,6 +359,11 @@ model NestedComment {
   @@index([parentCommentId])
   @@index([parentDiscussionId])
 }
+
+
+
+
+
 
 model Communitie {
   id          String @id @default(uuid(7))

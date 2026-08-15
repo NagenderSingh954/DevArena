@@ -623,8 +623,9 @@ const acceptChatRequest = asyncHandler(async (req, res) => {
     }
     });
 
-    const members = chat.members.map(member => member.userId);
 
+    const members = chat.members.map(member => member.user.id);
+  
     await prisma.chatRequest.delete({
             where: {
                 id: requestId
@@ -1005,5 +1006,8 @@ const deletePersonalChat = asyncHandler(async (req, res) => {
         message: "Chat deleted successfully.",
     });
 });
+
+
+
 
 export { newGroup, addCommunityMembers, getUserChats, getUserGroup, removeMember, leaveCommunity,acceptChatRequest,sendRequest,getMessages,getCommunityDetails,renameCommunity,deleteCommunity,deletePersonalChat}
