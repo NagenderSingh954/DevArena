@@ -8,25 +8,26 @@ import { v4 as uuid } from 'uuid'
 import { getSockets } from './utils/features.js'
 import { socketAuthenticator } from './middleware/auth.middleware.js'
 import { corsOptions } from './constant/config.js'
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING,CHAT_JOINED,CHAT_LEAVED } from './constant/event.js'
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING,CHAT_JOINED,CHAT_LEAVED,ONLINE_USERS} from './constant/event.js'
 
 const app = express()
 
 
-// const allowedOrigins = process.env.CORS_ORIGIN.split(",").map(origin => origin.trim());
+const allowedOrigins = process.env.CORS_ORIGIN.split(",").map(origin => origin.trim());
 
-// app.use(
-//     cors({
-//         origin: (origin, callback) => {
-//             if (!origin || allowedOrigins.includes(origin)) {
-//                 callback(null, true);
-//             } else {
-//                 callback(new Error("Not allowed by CORS"));
-//             }
-//         },
-//         credentials: true,
-//     })
-// ); 
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+            
+        },
+        credentials: true,
+    })
+); 
 
 
 const server = createServer(app)
@@ -50,10 +51,12 @@ io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
     const user = socket.user;
-
+    onlineUsers.add(user.id.toString())
+    
+    
 
     userSocketIDs.set(user.id.toString(), socket.id)
-
+    io.emit(ONLINE_USERS, Array.from(onlineUsers));
     socket.on(NEW_MESSAGE, async ({ communityId, members, message }) => {
         const messageForRealTime = {
             id: uuid(),
@@ -120,10 +123,14 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         userSocketIDs.delete(user.id.toString());
         console.log("User Disconnected")
+         onlineUsers.delete(user.id);
+
+        // Tell everyone that this user went offline
+        io.emit(ONLINE_USERS, Array.from(onlineUsers));
     })
 })
 
-app.use(cors())
+// app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded())
 app.use(express.static('public'))       //public is our foldee
