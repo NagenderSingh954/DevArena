@@ -40,7 +40,7 @@ const userSocketIDs = new Map();
 const onlineUsers = new Set();
 
 io.use((socket, next) => {
-    console.log("Cookie header:", socket.request.headers.cookie);
+    // console.log("Cookie header:", socket.request.headers.cookie);
     cookieParser()(
         socket.request,         // req
         socket.request.res,    // res
@@ -48,7 +48,7 @@ io.use((socket, next) => {
     );
 });  //exprese cookieparser not work in the socket 
 io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+   
 
     const user = socket.user;
     onlineUsers.add(user.id.toString())
@@ -172,8 +172,6 @@ import discussionRoute from './routers/disccusion.routes.js'
 import nestedRoute from './routers/nested.routes.js'
 import communityRoute from './routers/community.routes.js'
 import chatRoute from './routers/chat.routes.js'
-
-import { send } from 'process'
 
 
 
