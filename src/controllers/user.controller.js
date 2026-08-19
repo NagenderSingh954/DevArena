@@ -162,7 +162,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {      //be default cookies can be modiefied by the anyone but through this option we can tell who can modify
         httpOnly: true,      //Only server can modify these cookies through these options 
-        secure: true
+        secure: true,
+        sameSite: "none",
     }
 
     return res.status(200)
