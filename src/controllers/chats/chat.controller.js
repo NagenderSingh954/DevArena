@@ -415,7 +415,14 @@ const removeMember = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Cannot remove members from a private chat.");
     }
 
-
+     const remainingMembers = await prisma.communityMember.findMany({
+        where: {
+            communityId,
+        },
+        select: {
+            userId: true,
+        },
+    });
 
     await prisma.communityMember.delete({
         where: {
@@ -426,14 +433,7 @@ const removeMember = asyncHandler(async (req, res) => {
         }
     })
 
-    const remainingMembers = await prisma.communityMember.findMany({
-        where: {
-            communityId,
-        },
-        select: {
-            userId: true,
-        },
-    });
+   
 
     const allChatMembers = remainingMembers.map(member => member.userId);
     emitEvent(req, ALERT, remainingMembers.members, {
@@ -441,7 +441,7 @@ const removeMember = asyncHandler(async (req, res) => {
         communityId,
     });
 
-
+    console.log(allChatMembers)
     emitEvent(req, REFETCH_CHATS, allChatMembers);
 
     return res.status(200).json(

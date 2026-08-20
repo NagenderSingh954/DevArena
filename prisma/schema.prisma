@@ -6,11 +6,316 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model User {
+  id                   String            @id @default(uuid(7))
+  username             String            @unique
+  email                String            @unique
+  fullName             String?
+  password             String
+  avatar               String?
+  role                 Role              @default(user)
+  type                 String            @default("Developer")
+  bio                  String?
+  git                  String?
+  phone                String?           @unique
+  emailVerified        Boolean           @default(false)
+  status               String            @default("active")
+  refreshToken         String?
+  refreshTokenExpiry   DateTime?
+  isSubscribed         Boolean           @default(false)
+  package              String            @default("free")
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  receivedRequests     ChatRequest[]     @relation("ChatRequestReceiver")
+  sentRequests         ChatRequest[]     @relation("ChatRequestSender")
+  comment              Comment[]
+  communitiesAdmin     Communitie[]      @relation("Admin")
+  communityMemberships CommunityMember[]
+  contestOwner         Contest[]         @relation("contestOwner")
+  discussion           Discussion[]      @relation("discussion")
+  following            Follower[]        @relation("UserFollowers")
+  followers            Follower[]        @relation("UserFollowing")
+  like                 Like[]
+  msgsender            Message[]         @relation("MsgSender")
+  nestedComments       NestedComment[]
+  submittedCodes       SubmittedCode[]
+  joinedContests       Contest[]         @relation("ContestParticipants")
+
+  @@index([username])
+  @@map("users")
+}
+
+model Discussion {
+  id        String          @id @default(uuid(7))
+  ownerId   String
+  content   String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  isEdited  Boolean         @default(false)
+  owner     User            @relation("discussion", fields: [ownerId], references: [id])
+  like      Like[]
+  replies   NestedComment[]
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+model Like {
+  id              String         @id @default(uuid(7))
+  userId          String
+  contestId       String?
+  commentId       String?
+  discussionId    String?
+  nestedCommentId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  comment         Comment?       @relation(fields: [commentId], references: [id])
+  contest         Contest?       @relation(fields: [contestId], references: [id])
+  discussion      Discussion?    @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  nestedComment   NestedComment? @relation(fields: [nestedCommentId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id])
+
+  @@unique([userId, contestId])
+  @@unique([userId, commentId])
+  @@unique([userId, discussionId])
+  @@unique([userId, nestedCommentId])
+  @@index([userId])
+  @@index([contestId])
+  @@index([commentId])
+  @@index([discussionId])
+  @@index([nestedCommentId])
+}
+
+model Language {
+  id          String          @id
+  lang        String          @unique
+  image       String
+  createdAt   DateTime        @default(now())
+  buggyCode   BuggyCode[]
+  submissions SubmittedCode[]
+  problems    Problem[]       @relation("LanguageToProblem")
+}
+
+model Contest {
+  id             String          @id @default(uuid(7))
+  ownerId        String
+  isCancelled    Boolean         @default(false)
+  languages      String[]
+  title          String
+  description    String?
+  contentType    String          @default("DSA")
+  visibility     visibility      @default(public)
+  startingFrom   DateTime
+  endingAt       DateTime
+  totalPoints    Int?
+  password       String?
+  isProtected    Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  comment        Comment[]
+  owner          User            @relation("contestOwner", fields: [ownerId], references: [id])
+  likes          Like[]
+  problems       Problem[]
+  submittedCodes SubmittedCode[]
+  participants   User[]          @relation("ContestParticipants")
+
+  @@index([title])
+}
+
+model Problem {
+  id             String          @id @default(uuid(7))
+  contestId      String
+  title          String
+  statement      String
+  difficulty     Difficulty      @default(easy)
+  tags           String[]
+  constraints    String[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  preloadedcode  BuggyCode[]
+  contest        Contest         @relation(fields: [contestId], references: [id])
+  submittedCodes SubmittedCode[]
+  testCases      TestCase[]
+  language       Language[]      @relation("LanguageToProblem")
+}
+
+model BuggyCode {
+  id         String   @id @default(uuid(7))
+  problemId  String
+  languageId String
+  code       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  language   Language @relation(fields: [languageId], references: [id])
+  problem    Problem  @relation(fields: [problemId], references: [id])
+
+  @@unique([problemId, languageId])
+  @@index([problemId])
+  @@index([languageId])
+}
+
+model TestCase {
+  id        String   @id @default(uuid(7))
+  problemId String
+  input     String
+  output    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  problem   Problem  @relation(fields: [problemId], references: [id])
+
+  @@index([problemId])
+}
+
+model SubmittedCode {
+  id              String           @id @default(uuid(7))
+  code            String
+  submissionerId  String
+  problemId       String
+  contestId       String?
+  languageId      String
+  status          SubmissionStatus @default(PENDING)
+  executionTime   Int?
+  memoryUsed      Int?
+  totalTestCases  Int?
+  passedTestCases Int?
+  errorMessage    String?
+  output          String?
+  createdAt       DateTime         @default(now())
+  contest         Contest?         @relation(fields: [contestId], references: [id])
+  language        Language         @relation(fields: [languageId], references: [id])
+  problem         Problem          @relation(fields: [problemId], references: [id])
+  submissioner    User             @relation(fields: [submissionerId], references: [id])
+
+  @@index([submissionerId])
+  @@index([problemId])
+  @@index([contestId])
+  @@index([languageId])
+  @@index([createdAt])
+}
+
+model Follower {
+  id          String   @id @default(uuid(7))
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id])
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Comment {
+  id        String          @id @default(uuid(7))
+  contestId String
+  ownerId   String
+  content   String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  contest   Contest         @relation(fields: [contestId], references: [id])
+  owner     User            @relation(fields: [ownerId], references: [id])
+  likes     Like[]
+  replies   NestedComment[]
+
+  @@index([contestId])
+  @@index([ownerId])
+}
+
+model NestedComment {
+  id                 String          @id @default(uuid(7))
+  content            String
+  ownerId            String
+  parentCommentId    String?
+  parentDiscussionId String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  parentReplyId      String?
+  likes              Like[]
+  owner              User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parentComment      Comment?        @relation(fields: [parentCommentId], references: [id])
+  parentDiscussion   Discussion?     @relation(fields: [parentDiscussionId], references: [id])
+  parentReply        NestedComment?  @relation("ReplyTree", fields: [parentReplyId], references: [id])
+  children           NestedComment[] @relation("ReplyTree")
+
+  @@index([ownerId])
+  @@index([parentCommentId])
+  @@index([parentDiscussionId])
+}
+
+model Communitie {
+  id                   String            @id @default(uuid(7))
+  name                 String?
+  description          String?
+  avatar               String?
+  isGroup              Boolean           @default(false)
+  adminId              String?
+  allowMessages        Boolean           @default(true)
+  allowMedia           Boolean           @default(true)
+  allowFiles           Boolean           @default(true)
+  allowMemberInvite    Boolean           @default(true)
+  allowMemberEdit      Boolean           @default(false)
+  onlyAdminCanAnnounce Boolean           @default(false)
+  onlyAdminCanPin      Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  admin                User?             @relation("Admin", fields: [adminId], references: [id])
+  members              CommunityMember[]
+  messages             Message[]
+
+  @@index([isGroup])
+}
+
+model CommunityMember {
+  id          String     @id @default(uuid(7))
+  userId      String
+  communityId String
+  joinedAt    DateTime   @default(now())
+  community   Communitie @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@unique([userId, communityId])
+  @@index([userId])
+  @@index([communityId])
+}
+
+model Message {
+  id          String     @id @default(uuid(7))
+  content     String
+  senderId    String
+  communityId String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  community   Communitie @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  sender      User       @relation("MsgSender", fields: [senderId], references: [id])
+
+  @@index([communityId])
+  @@index([senderId])
+}
+
+model ChatRequest {
+  id         String        @id @default(uuid(7))
+  status     RequestStatus @default(PENDING)
+  senderId   String
+  receiverId String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  receiver   User          @relation("ChatRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User          @relation("ChatRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
 enum RequestStatus {
   PENDING
   ACCEPTED
   REJECTED
 }
+
 enum Role {
   user
   admin
@@ -35,249 +340,6 @@ enum ContestStatus {
   CANCELLED
 }
 
-model User {
-  id                 String    @id @default(uuid(7))
-  username           String    @unique
-  email              String    @unique
-  fullName           String?
-  password           String
-  avatar             String?
-  role               Role      @default(user)
-  type               String    @default("Developer")
-  bio                String?
-  git                String?
-  phone              String?   @unique
-  emailVerified      Boolean   @default(false)
-  status             String    @default("active")
-  refreshToken       String?
-  refreshTokenExpiry DateTime?
-  isSubscribed       Boolean   @default(false)
-  package            String    @default("free")
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  //Relations 
-  communitiesAdmin     Communitie[]      @relation("Admin")
-  communityMemberships CommunityMember[]
-  discussion           Discussion[]      @relation("discussion")
-  like                 Like[]
-  contestOwner         Contest[]         @relation("contestOwner")
-  // contestPerticipant Contest[] @relation("contestPerticipant")
-  joinedContests       Contest[]         @relation("ContestParticipants")
-
-  submittedCodes SubmittedCode[]
-
-  following Follower[] @relation("UserFollowers")
-  followers Follower[] @relation("UserFollowing")
-
-  comment        Comment[]
-  nestedComments NestedComment[]
-  msgsender    Message[] @relation("MsgSender")
-  // msgreceiver     Message[] @relation("MsgReceiver") 
-  sentRequests     ChatRequest[] @relation("ChatRequestSender")
-  receivedRequests ChatRequest[] @relation("ChatRequestReceiver")
-
-  @@index([username])
-  @@map("users")
-}
-
-
-
-model Discussion {
-  id        String          @id @default(uuid(7))
-  ownerId   String
-  // contestId String?
-  // problemId String?
-  owner     User            @relation("discussion", fields: [ownerId], references: [id])
-  // contest   Contest?         @relation("contest", fields: [contestId], references: [id])
-  // problem   Problem?         @relation("problem", fields: [problemId], references: [id])
-  content   String
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  replies   NestedComment[]
-  like      Like[]
-  isEdited Boolean @default(false)
-
-  @@index([ownerId])
-@@index([createdAt])
-}
-
-model Like {
-  id              String   @id @default(uuid(7))
-
-  userId          String
-  contestId       String?
-  commentId       String?
-  discussionId    String?
-  nestedCommentId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user            User            @relation(fields: [userId], references: [id])
-  contest         Contest?        @relation(fields: [contestId], references: [id])
-  comment         Comment?        @relation(fields: [commentId], references: [id])
-  discussion      Discussion?     @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-  nestedComment   NestedComment?  @relation(fields: [nestedCommentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, contestId])
-  @@unique([userId, commentId])
-  @@unique([userId, discussionId])
-  @@unique([userId, nestedCommentId])
-
-  @@index([userId])
-  @@index([contestId])
-  @@index([commentId])
-  @@index([discussionId])
-  @@index([nestedCommentId])
-}
-
-// model Language {
-//   id        String      @id @default(uuid(7))
-//   lang      String      @unique // e.g. "python", "node", "go"
-//   image     String // Docker image reference, e.g. "python:3.11-slim"
-//   problems  Problem[]
-//   buggyCode BuggyCode[]
-
-//   createdAt DateTime @default(now())
-// }
-model Language {
-  id        String @id
-  lang      String @unique
-  image     String
-
-  problems  Problem[]
-  buggyCode BuggyCode[]
-  submissions SubmittedCode[]
-
-  createdAt DateTime @default(now())
-}
-
-model Contest {
-  id           String     @id @default(uuid(7))
-  ownerId      String //relation with users
-  // participantId String[]  //relation with users
-  isCancelled  Boolean    @default(false)
-  languages    String[]
-  title        String
-  description  String?
-  contentType  String     @default("DSA")
-  visibility   visibility @default(public)
-  startingFrom DateTime
-  endingAt     DateTime //From starting and ending time teh duration must be calculatedx
-  totalPoints  Int?
-  password     String?
-  isProtected  Boolean    @default(false)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  owner          User            @relation("contestOwner", fields: [ownerId], references: [id])
-  // participant User[] @relation("contestperticipant",fields: [participantId],references: [id])
-  participants   User[]          @relation("ContestParticipants")
-  problems       Problem[]
-  submittedCodes SubmittedCode[]
-  comment        Comment[]
-  likes       Like[]
-
-  @@index([title])
-}
-
-model Problem {
-  id         String     @id @default(uuid(7))
-  contestId  String //relation
-  title      String
-  statement  String
-  difficulty Difficulty @default(easy)
-  //type are missing may be in future 
-  tags       String[]
-  constraints String[]
-
-  contest  Contest    @relation(fields: [contestId], references: [id])
-  // language Language[] @relation(fields: [languageId],references: [id])
-  language Language[]
-
-  testCases     TestCase[] //relation   i
-  preloadedcode BuggyCode[] //it is optional field Also relation with buggy code
-
-  submittedCodes SubmittedCode[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model BuggyCode {
-  id         String @id @default(uuid(7))
-  problemId  String
-  languageId String
-  code       String
-
-  problem  Problem  @relation(fields: [problemId], references: [id])
-  language Language @relation(fields: [languageId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([problemId, languageId])
-  @@index([problemId])
-  @@index([languageId])
-}
-
-model TestCase {
-  id        String @id @default(uuid(7))
-  problemId String
-  input     String
-  output    String
-
-  // Relation to Problem model
-  problem Problem @relation(fields: [problemId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Index for faster lookups by problem
-  @@index([problemId])
-}
-
-model SubmittedCode {
-  id            String   @id @default(uuid(7))
-  code          String
-
-  submissionerId String
-  problemId      String
-  contestId      String?
-
-  languageId    String
-
-  status        SubmissionStatus @default(PENDING)
-
-
-  executionTime Int?
-  memoryUsed    Int?
-
-
-  totalTestCases  Int?
-  passedTestCases Int?
-
-  // Error / execution output
-  errorMessage String?
-  output       String?
-
-  createdAt DateTime @default(now())
-
-  // Relations
-  submissioner User     @relation(fields: [submissionerId], references: [id])
-  problem      Problem  @relation(fields: [problemId], references: [id])
-  contest      Contest? @relation(fields: [contestId], references: [id])
-  language     Language @relation(fields: [languageId], references: [id])
-
-  // Indexes
-  @@index([submissionerId])
-  @@index([problemId])
-  @@index([contestId])
-  @@index([languageId])
-  @@index([createdAt])
-}
-
 enum SubmissionStatus {
   PENDING
   RUNNING
@@ -288,159 +350,4 @@ enum SubmissionStatus {
   TIME_LIMIT_EXCEEDED
   MEMORY_LIMIT_EXCEEDED
   INTERNAL_ERROR
-}
-
-model Follower {
-  id          String   @id @default(uuid(7))
-  followerId  String
-  followingId String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations (self-relation to Users)
-  follower  User @relation("UserFollowers", fields: [followerId], references: [id])
-  following User @relation("UserFollowing", fields: [followingId], references: [id])
-
-  @@unique([followerId, followingId]) // prevent duplicate follow records
-  // Indexes for efficient lookups
-  @@index([followerId])
-  @@index([followingId])
-}
-
-// There will be separate class for the perticipant as we also have to rank them 
-
-model Comment {
-  id        String   @id @default(uuid(7))
-  contestId String
-  ownerId   String
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  contest Contest         @relation(fields: [contestId], references: [id])
-  owner   User            @relation(fields: [ownerId], references: [id])
-  replies NestedComment[]
-  likes   Like[]
-
-  // Indexes for efficient lookups
-  @@index([contestId])
-  @@index([ownerId])
-}
-
-model NestedComment {
-  id                 String   @id @default(uuid(7))
-  content            String
-  ownerId            String
-  // contestId       String
-  parentCommentId    String?
-  parentDiscussionId String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  // Self relation for nested replies
-  parentReplyId String?
-
-  // Relations
-  owner            User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  // contest         Contest     @relation(fields: [contestId], references: [id])
-  parentComment    Comment?    @relation(fields: [parentCommentId], references: [id])
-  parentDiscussion Discussion? @relation(fields: [parentDiscussionId], references: [id])
-
-  // Self relation
-
-  parentReply NestedComment?  @relation("ReplyTree", fields: [parentReplyId], references: [id])
-  children    NestedComment[] @relation("ReplyTree")
-   likes  Like[]
-
-  // Indexes for efficient lookups
-  @@index([ownerId])
-  // @@index([contestId])
-  @@index([parentCommentId])
-  @@index([parentDiscussionId])
-}
-
-
-
-
-
-
-model Communitie {
-  id          String @id @default(uuid(7))
-
-  name        String?
-  description String?
-  avatar      String?
-
-  isGroup Boolean @default(false)
-
-  adminId String?
-  admin   User? @relation("Admin", fields: [adminId], references: [id])
-
-  members  CommunityMember[]
-  messages Message[]
-
-  allowMessages        Boolean @default(true)
-  allowMedia           Boolean @default(true)
-  allowFiles           Boolean @default(true)
-  allowMemberInvite    Boolean @default(true)
-  allowMemberEdit      Boolean @default(false)
-  onlyAdminCanAnnounce Boolean @default(false)
-  onlyAdminCanPin      Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-   @@index([isGroup])
-}
-
-model CommunityMember {
-  id          String @id @default(uuid(7))
-
-  userId      String
-  communityId String
-
-  user      User       @relation(fields: [userId], references: [id])
-  community Communitie @relation(fields: [communityId], references: [id], onDelete: Cascade)
-
-  joinedAt DateTime @default(now())
-
-  @@unique([userId, communityId])
-  @@index([userId])
-  @@index([communityId])
-}
-
-model Message {
-  id          String @id @default(uuid(7))
-
-  content     String
-  senderId    String
-  communityId String
-
-  sender    User       @relation("MsgSender", fields: [senderId], references: [id])
-  community Communitie @relation(fields: [communityId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([communityId])
-  @@index([senderId])
-}
-
-model ChatRequest {
-  id String @id @default(uuid(7))
-
-  status RequestStatus @default(PENDING)
-
-  senderId   String
-  receiverId String
-
-  sender   User @relation("ChatRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("ChatRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([senderId, receiverId])
-  @@index([senderId])
-  @@index([receiverId])
 }
