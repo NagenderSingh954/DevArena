@@ -172,6 +172,7 @@ import discussionRoute from './routers/disccusion.routes.js'
 import nestedRoute from './routers/nested.routes.js'
 import communityRoute from './routers/community.routes.js'
 import chatRoute from './routers/chat.routes.js'
+import submissionRouter from './routers/submission.routes.js'
 
 
 
@@ -186,6 +187,7 @@ app.use('/api/v1/nest', nestedRoute)
 app.use('/api/v1/like', likeRoute)
 // app.use('/api/v1/community',communityRoute)
 app.use('/api/v1/chat', chatRoute)
+app.use("/api/v1/execute", submissionRouter);
 
 
 app.use((err, req, res, next) => {
@@ -195,4 +197,6 @@ app.use((err, req, res, next) => {
         errors: err.errors || []
     });
 });
+
+
 export { app, server, userSocketIDs }

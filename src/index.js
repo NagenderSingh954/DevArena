@@ -1,8 +1,7 @@
 import {app,server} from './app.js'
 import { connectDB } from './db/index.js'
 import dotenv from 'dotenv';
-
-
+import { prisma } from "../lib/prisma.js";
 
 dotenv.config({
     path:'./env'
@@ -25,3 +24,5 @@ connectDB()
 .catch((err) => {
     console.log("PostgreSQL Connection Failed!!!", err);
 });
+
+
