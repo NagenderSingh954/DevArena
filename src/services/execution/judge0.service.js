@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ApiError } from "../../utils/ApiErro";
+import { ApiError } from "../../utils/ApiErro.js";
 
 const JUDGE0_URL = process.env.JUDGE0_URL;
 
