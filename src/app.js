@@ -173,6 +173,8 @@ import nestedRoute from './routers/nested.routes.js'
 import communityRoute from './routers/community.routes.js'
 import chatRoute from './routers/chat.routes.js'
 import submissionRouter from './routers/submission.routes.js'
+import paymentRouter from './routers/payment.routes.js'
+import { ApiResponse } from './utils/ApiResponse.js'
 
 
 
@@ -188,6 +190,15 @@ app.use('/api/v1/like', likeRoute)
 // app.use('/api/v1/community',communityRoute)
 app.use('/api/v1/chat', chatRoute)
 app.use("/api/v1/execute", submissionRouter);
+app.use('/api/v1/payment',paymentRouter)
+
+app.get('/api/v1/get/razorpay',(req,res)=>{
+    const razorpay_key=process.env.RAZORPAY_API_KEY
+
+    return res.status(200).json(
+        new ApiResponse(200,razorpay_key,"Key fetched Successufully")
+    )
+})
 
 
 app.use((err, req, res, next) => {
