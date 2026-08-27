@@ -23,8 +23,11 @@ model User {
   status               String            @default("active")
   refreshToken         String?
   refreshTokenExpiry   DateTime?
-  isSubscribed         Boolean           @default(false)
-  package              String            @default("free")
+ 
+  package            Package  @default(free)
+  isSubscribed       Boolean  @default(false)
+
+  subscription       Subscription?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   receivedRequests     ChatRequest[]     @relation("ChatRequestReceiver")
@@ -351,3 +354,41 @@ enum SubmissionStatus {
   MEMORY_LIMIT_EXCEEDED
   INTERNAL_ERROR
 }
+
+model Subscription {
+  id                    String             @id @default(uuid(7))
+
+  userId                String             @unique
+  user                  User               @relation(fields: [userId], references: [id])
+
+  package               Package
+  status                SubscriptionStatus @default(pending)
+
+  startDate             DateTime?
+  endDate               DateTime?
+
+  razorpayOrderId       String?            @unique
+  razorpayPaymentId     String?            @unique
+
+  amount                Int
+  currency              String             @default("INR")
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+enum Package {
+  free
+  premium
+  elite
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  cancelled
+  pending
+}
+
