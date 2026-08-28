@@ -6,10 +6,10 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { generateAccessToken, generateRefreshToken } from "../services/auth/jwt.js";
 import { use } from "react";
 import jwt from 'jsonwebtoken'
+import { decodeIdToken, generateCodeVerifier, generateState, Google } from "arctic";
+import google from "../../lib/oauth.js";
 
 
-
-//getproblem and perticipation , strick , subscription ,  in active 
 
 const userActive = asyncHandler(async (userId) => {
     const userInfro = await prisma.user.findUnique({
@@ -57,7 +57,7 @@ const generateAccessAndrefreshToken = async (userId) => {
 
         return { accessToken, refreshToken }
     } catch (error) {
-        console.log("There is error while generating the tokens", error)
+       
     }
 }
 
@@ -114,6 +114,25 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 
 })
+
+
+const loginHelper = async (user, res) => {
+    const { accessToken, refreshToken } = await generateAccessAndrefreshToken(user.id)
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+    }
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(200, { user, accessToken, refreshToken }, "User has been logged in successfully")
+        )
+
+};
 
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -556,8 +575,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
 })
 
 const getUserSubscrition = asyncHandler(async (req, res) => {
-    const { username } = req.params
-
+    const { username } = req.user
     if (!username) {
         throw new ApiError(400, "Please Provide the Username")
     }
@@ -583,8 +601,9 @@ const getUserSubscrition = asyncHandler(async (req, res) => {
     )
 })
 
+
 const getAllUsers = asyncHandler(async (req, res) => {
-    console.log('djhfsj')
+    
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = 15;
     const skip = (page - 1) * limit;
@@ -679,5 +698,136 @@ const getChatNotification = asyncHandler(async (req, res) => {
 
 })
 
+const getGoogleLoginPage = asyncHandler(async (req, res) => {
+    const state = generateState();
+    const codeVarifier = generateCodeVerifier();
 
-export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail, getUserProfile, getUserSubscrition, getAllUsers, searchUser, getChatNotification }
+    const url = google.createAuthorizationURL(state, codeVarifier, ["openid", "profile", "email"]);
+
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",  //cookies are maintain while redirecting
+        maxAge: 10 * 60 * 1000
+    }
+
+    res.cookie("google_oauth_state", state, options)
+    res.cookie("google_code_verifier", codeVarifier, options)
+
+    res.redirect(url.toString())
+})
+
+const getGoogleLoginCallBack = asyncHandler(async (req, res) => {
+    const { state, code } = req.query;
+    const { google_oauth_state: storedState, google_code_verifier: storedCode } = req.cookies
+
+    if (!state || !code || !storedCode || !storedState || state !== storedState) {
+        // throw new ApiError(400,"Could not varify teh user")
+
+        return res.redirect(`${process.env.CLIENT_URL}/login`)
+    }
+
+    let token = await google.validateAuthorizationCode(code, storedCode);
+    // console.log(token);
+    if (!token) {
+        return res.redirect(`${process.env.CLIENT_URL}/login`);
+    }
+
+    const claim = decodeIdToken(token.idToken());
+    const { sub: googleId, name, email } = claim;
+
+    //now the main part of teh login 
+    //con 1: User alredy existe with the google auth linked
+    //con 2:User existe but the google auth is not linked 
+    //con 3: User Not Exist (New User)
+
+
+
+    //User Alredy Exist with The Google 
+    const existingOAuth = await prisma.oauth.findUnique({
+        where: {
+            email
+        },
+        include: {
+            user: true
+        }
+    })
+    if (existingOAuth) {
+        console.log("User With the Google Auth")
+        const user = existingOAuth.user;
+       return loginHelper(user, res)
+
+        // return res.redirect(`${process.env.CLIENT_URL}`);
+    }
+
+
+    //User Exist but the google auth is not linked and user click on the google login 
+
+    const existingUser = await prisma.user.findUnique({
+        where: {
+            email
+        }
+    })
+    if (existingUser) {
+        console.log("User are Exiteing but not with the Google ")
+        const createdOauth = await prisma.oauth.create({
+            data: {
+                userId: existingUser.id,
+                email,
+                provider: "google",
+                providerAccountId: googleId,
+            }
+
+
+        })
+        
+       return loginHelper(existingUser,res);
+
+
+    }
+
+
+    //User Not Exist 
+    console.log("New User Creation ")
+    let username = email.split("@")[0];
+
+    const usernameExists = await prisma.user.findUnique({
+        where: {
+            username
+        }
+    });
+
+    if (usernameExists) {
+        username = `${username}_${Date.now()}`;
+    }
+
+    const newUser = await prisma.user.create({
+        data: {
+            username,
+            email,
+            fullName: name,
+            avatar: "2",
+            password: "",
+
+            emailVerified: true,
+
+            oauth: {
+                create: {
+                    email,
+                    provider: "google",
+                    providerAccountId: googleId
+                }
+            }
+        }
+    });
+
+
+
+    return loginHelper(newUser,res);
+
+})
+
+
+
+export { registerUser, loginUser, channgeAvatar, changePassword, changeEmail, logout, refreshAccessToken, getCurrentUser, updateUserDetail, getUserProfile, getUserSubscrition, getAllUsers, searchUser, getChatNotification, getGoogleLoginPage ,getGoogleLoginCallBack}

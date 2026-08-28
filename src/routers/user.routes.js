@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeEmail, changePassword, channgeAvatar, getAllUsers, getChatNotification, getCurrentUser, getUserProfile, getUserSubscrition, loginUser, logout, refreshAccessToken, registerUser, searchUser, updateUserDetail } from "../controllers/user.controller.js";
+import { changeEmail, changePassword, channgeAvatar, getAllUsers, getChatNotification, getCurrentUser, getGoogleLoginCallBack, getGoogleLoginPage, getUserProfile, getUserSubscrition, loginUser, logout, refreshAccessToken, registerUser, searchUser, updateUserDetail } from "../controllers/user.controller.js";
 import { varifyJWt } from "../middleware/auth.middleware.js";
 import { getAllContest } from "../controllers/contest.controller.js";
 
@@ -18,11 +18,14 @@ router.route('/logout').post(varifyJWt,logout)
 router.route('/refresh-token').post(varifyJWt,refreshAccessToken)
 router.route('/current-user').get(varifyJWt,getCurrentUser)
 router.route('/update-account').patch(varifyJWt,updateUserDetail)
-router.route('/get/:username').get(getUserProfile)
-router.route('/get/Subscription-status/:username').get(varifyJWt,getUserSubscrition)
+
+router.route('/get/Subscription-status').get(varifyJWt,getUserSubscrition)
 router.route("/search")
     .get(searchUser);
 router.route('/notification').get(varifyJWt,getChatNotification)
+router.route('/google/login').get(getGoogleLoginPage)
+router.route('/google/callback').get(getGoogleLoginCallBack)
+router.route('/get/:username').get(getUserProfile)
 
 
 

@@ -44,9 +44,23 @@ model User {
   nestedComments       NestedComment[]
   submittedCodes       SubmittedCode[]
   joinedContests       Contest[]         @relation("ContestParticipants")
+  oauth Oauth[]
 
   @@index([username])
   @@map("users")
+}
+
+model Oauth {
+  id String   @id @default(uuid(7))
+  userId  String @unique
+  user  User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  email String @unique
+  provider Provider
+  providerAccountId String @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  @@unique([provider, providerAccountId])
+  @@index([email])
 }
 
 model Discussion {
@@ -392,3 +406,7 @@ enum SubscriptionStatus {
   pending
 }
 
+enum Provider{
+  google
+  github
+}

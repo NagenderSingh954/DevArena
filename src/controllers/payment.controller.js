@@ -81,9 +81,9 @@ const paymentVarification = asyncHandler(async (req, res) => {
     // You should eventually get this from your own pending order record.
     let packageType;
 
-    if (order.amount === 2000) {
+    if (order.amount === 200) {
         packageType = "premium";
-    } else if (order.amount === 3000) {
+    } else if (order.amount === 300) {
         packageType = "elite";
     } else {
         throw new ApiError(
@@ -119,7 +119,8 @@ const paymentVarification = asyncHandler(async (req, res) => {
                 id: userId
             },
             data: {
-                package: packageType
+                package: packageType,
+                isSubscribed:true
             }
         });
 
