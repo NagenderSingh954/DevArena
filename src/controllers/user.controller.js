@@ -116,22 +116,32 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 
-const loginHelper = async (user, res) => {
-    const { accessToken, refreshToken } = await generateAccessAndrefreshToken(user.id)
+const loginHelper = async (user, res, redirect = true) => {
+
+    const { accessToken, refreshToken } =
+        await generateAccessAndrefreshToken(user.id);
 
     const options = {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: false, // localhost
+        sameSite: "lax",
+    };
+
+    res
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options);
+
+    if (redirect) {
+        return res.redirect(process.env.CLIENT_URL);
     }
 
-    return res.status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
-        .json(
-            new ApiResponse(200, { user, accessToken, refreshToken }, "User has been logged in successfully")
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { user },
+            "User has been logged in successfully"
         )
-
+    );
 };
 
 
@@ -703,7 +713,7 @@ const getGoogleLoginPage = asyncHandler(async (req, res) => {
     const codeVarifier = generateCodeVerifier();
 
     const url = google.createAuthorizationURL(state, codeVarifier, ["openid", "profile", "email"]);
-
+   
 
     const options = {
         httpOnly: true,
@@ -754,7 +764,7 @@ const getGoogleLoginCallBack = asyncHandler(async (req, res) => {
         }
     })
     if (existingOAuth) {
-        console.log("User With the Google Auth")
+  
         const user = existingOAuth.user;
        return loginHelper(user, res)
 
@@ -770,7 +780,7 @@ const getGoogleLoginCallBack = asyncHandler(async (req, res) => {
         }
     })
     if (existingUser) {
-        console.log("User are Exiteing but not with the Google ")
+        
         const createdOauth = await prisma.oauth.create({
             data: {
                 userId: existingUser.id,
@@ -789,7 +799,7 @@ const getGoogleLoginCallBack = asyncHandler(async (req, res) => {
 
 
     //User Not Exist 
-    console.log("New User Creation ")
+    
     let username = email.split("@")[0];
 
     const usernameExists = await prisma.user.findUnique({
