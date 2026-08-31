@@ -2,6 +2,7 @@ import {app,server} from './app.js'
 import { connectDB } from './db/index.js'
 import dotenv from 'dotenv';
 import { prisma } from "../lib/prisma.js";
+// import connectRedis from './db/redis.js';
 
 dotenv.config({
     path:'./env'

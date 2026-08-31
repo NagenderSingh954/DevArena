@@ -175,6 +175,7 @@ import chatRoute from './routers/chat.routes.js'
 import submissionRouter from './routers/submission.routes.js'
 import paymentRouter from './routers/payment.routes.js'
 import { ApiResponse } from './utils/ApiResponse.js'
+import varificationRouter from './routers/auth.routes.js'
 
 
 
@@ -191,6 +192,7 @@ app.use('/api/v1/like', likeRoute)
 app.use('/api/v1/chat', chatRoute)
 app.use("/api/v1/execute", submissionRouter);
 app.use('/api/v1/payment',paymentRouter)
+app.use('/api/v1/email',varificationRouter)
 
 app.get('/api/v1/get/razorpay',(req,res)=>{
     const razorpay_key=process.env.RAZORPAY_API_KEY
