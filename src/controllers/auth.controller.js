@@ -12,12 +12,12 @@ const generator=asyncHandler(async (req,res)=>{
    const otp = Math.floor(100000 + Math.random() * 900000);
     await redis.set(otpkey(email),`${otp}`,"EX",180)
 
-    const job =await emailQueue.add("Send OTP",{
-    from: "CodeArena <onboarding@resend.dev>",
-    to: "nagendersingh954@gmail.com",
+ const job = await emailQueue.add("Send OTP", {
+    from: `CodeArena <${process.env.EMAIL_USER}>`,
+    to: email,
     subject: "Verify your CodeArena email",
-    html: otpEmailTemplate(otp)
-})
+    html: otpEmailTemplate(otp),
+});
 
     return res.status(200).json(
         new ApiResponse(200,job,"OTP Email has Been Sended Successfully")
@@ -35,10 +35,24 @@ const getOTP=asyncHandler(async (req,res)=>{
     )
 
 })
+const getOtpTTL = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    const ttl = await redis.ttl(otpkey(email));
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { expiresIn: ttl },
+            "OTP TTL fetched successfully"
+        )
+    );
+});
+
 
 const varifyOTP=asyncHandler(async (req,res)=>{
     const {email,otp}=req.body;
-    const saved=await redis.get(otpkey(phone))
+    const saved=await redis.get(otpkey(email))
     if(!saved){
         
            throw new ApiError(404,"OTP Expired")
@@ -47,7 +61,7 @@ const varifyOTP=asyncHandler(async (req,res)=>{
     if(saved !== otp){
         throw new ApiError(404,"Otp is invalid please enter the correct otp")
     }
-    await redis.del(otpkey(phone))
+    await redis.del(otpkey(email))
 
      const updatedUser = await prisma.user.update({
             where: {
@@ -74,4 +88,4 @@ const varifyOTP=asyncHandler(async (req,res)=>{
 
 
 
-export {generator,getOTP,varifyOTP}
+export {generator,getOTP,varifyOTP,getOtpTTL}
