@@ -8,6 +8,8 @@ import { use } from "react";
 import jwt from 'jsonwebtoken'
 import { decodeIdToken, generateCodeVerifier, generateState, Google } from "arctic";
 import google from "../../lib/oauth.js";
+import { emailQueue } from "../utils/queue.js";
+import { welcomeEmailTemplate } from "../utils/emailtamplate.js";
 
 
 
@@ -108,6 +110,16 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!user) {
         throw new ApiError(500, "Internal server error while creating the User")
     }
+
+    const html = welcomeEmailTemplate(username);
+
+   const job = await emailQueue.add("Send OTP", {
+    from: `CodeArena <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Welcome to CodeArena",
+    html,
+});
+
 
     return res.status(201).json(
         new ApiResponse(201, user, "User Created Successfully")
@@ -832,6 +844,14 @@ const getGoogleLoginCallBack = asyncHandler(async (req, res) => {
         }
     });
 
+      const html = welcomeEmailTemplate(name);
+
+   const job = await emailQueue.add("Send OTP", {
+    from: `CodeArena <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Welcome to CodeArena",
+    html,
+});
 
 
     return loginHelper(newUser,res);

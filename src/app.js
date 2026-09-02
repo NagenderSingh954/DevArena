@@ -206,31 +206,6 @@ app.get('/api/v1/get/razorpay',(req,res)=>{
 
 
 
-app.get("/test-email", async (req, res) => {
-    try {
-        const otp = "123456";
-        const info = await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: "infinitymart48@gmail.com",
-            subject: "OTP Test",
-            html: otpEmailTemplate(56125),
-        });
-
-        console.log("Email sent:", info.messageId);
-
-        res.json({
-            success: true,
-            message: "Email sent successfully",
-        });
-    } catch (error) {
-        console.error("Email error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Email failed",
-        });
-    }
-});
 
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({
